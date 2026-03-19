@@ -1,0 +1,132 @@
+.back-btn {
+  margin-bottom: var(--space-lg);
+}
+
+.room-detail-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+.room-detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.room-detail-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.room-detail-icon {
+  font-size: 2rem;
+}
+
+.room-detail-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.room-detail-location {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.room-detail-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-lg);
+}
+
+.meta-item {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.meta-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+
+.room-detail-amenities,
+.room-detail-desc {
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.detail-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-md);
+}
+
+.amenities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.amenity-chip {
+  padding: 6px 14px;
+  background: rgba(108, 92, 231, 0.1);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  color: var(--primary-light);
+}
+
+.room-detail-desc p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.book-room-btn {
+  width: 100%;
+}
+
+.login-prompt {
+  text-align: center;
+  padding: var(--space-lg);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.room-detail-calendar {
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 1024px) {
+  .room-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
