@@ -96,11 +96,11 @@
 
 .amenity-chip {
   padding: 6px 14px;
-  background: rgba(108, 92, 231, 0.1);
-  border: 1px solid rgba(108, 92, 231, 0.2);
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
   border-radius: var(--radius-full);
   font-size: 0.85rem;
-  color: var(--primary-light);
+  color: var(--primary);
 }
 
 .room-detail-desc p {

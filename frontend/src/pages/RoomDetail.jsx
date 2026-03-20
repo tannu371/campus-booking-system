@@ -77,7 +77,7 @@ const RoomDetail = () => {
     title: b.title || 'Booked',
     start: `${new Date(b.date).toISOString().split('T')[0]}T${b.startTime}`,
     end: `${new Date(b.date).toISOString().split('T')[0]}T${b.endTime}`,
-    backgroundColor: b.status === 'approved' ? '#6C5CE7' : '#FDCB6E',
+    backgroundColor: b.status === 'approved' ? '#E67E22' : '#F39C12',
     borderColor: 'transparent'
   }));
 

@@ -18,7 +18,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 30% 50%, rgba(108, 92, 231, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle at 30% 50%, rgba(var(--primary-rgb), 0.15) 0%, transparent 70%);
 }
 
 .room-card-icon {
@@ -56,6 +56,10 @@
   color: var(--text-secondary);
 }
 
+.room-detail svg {
+  stroke: var(--text-muted);
+}
+
 .room-card-amenities {
   display: flex;
   flex-wrap: wrap;
@@ -66,8 +70,8 @@
 .amenity-tag {
   font-size: 0.75rem;
   padding: 3px 10px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border);
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
   border-radius: var(--radius-full);
   color: var(--text-secondary);
 }
@@ -75,7 +79,7 @@
 .amenity-more {
   font-size: 0.75rem;
   padding: 3px 10px;
-  color: var(--primary-light);
+  color: var(--primary);
 }
 
 .room-card-footer {
@@ -102,11 +106,11 @@
 .room-book-cta {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--primary-light);
+  color: var(--primary);
   transition: all var(--transition-fast);
 }
 
 .room-card:hover .room-book-cta {
-  color: var(--primary);
+  color: var(--primary-dark);
   transform: translateX(4px);
 }

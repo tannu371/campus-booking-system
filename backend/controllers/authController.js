@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { sendEmail } = require('../config/mailer');
+const { welcomeEmail } = require('../utils/emailTemplates');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'campus_booking_secret', {
@@ -19,6 +21,9 @@ const register = async (req, res) => {
     }
 
     const user = await User.create({ name, email, password });
+
+    // Send welcome email (non-blocking)
+    sendEmail(email, 'Welcome to CampusBook! 🏫', welcomeEmail(name)).catch(() => {});
 
     res.status(201).json({
       _id: user._id,

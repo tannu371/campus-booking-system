@@ -2,11 +2,12 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(15, 14, 23, 0.85);
+  background: var(--navbar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   height: 72px;
+  transition: background-color 0.3s ease;
 }
 
 .navbar-inner {
@@ -59,11 +60,11 @@
 }
 
 .nav-admin {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .nav-admin:hover {
-  color: var(--accent-light);
+  color: var(--primary-dark);
 }
 
 .nav-user {

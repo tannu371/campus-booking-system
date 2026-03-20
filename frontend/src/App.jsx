@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
@@ -15,22 +16,24 @@ import ManageBookings from './pages/admin/ManageBookings';
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <ToastProvider>
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/rooms" element={<Rooms />} />
-            <Route path="/rooms/:id" element={<RoomDetail />} />
-            <Route path="/my-bookings" element={<MyBookings />} />
-            <Route path="/admin" element={<Dashboard />} />
-            <Route path="/admin/rooms" element={<ManageRooms />} />
-            <Route path="/admin/bookings" element={<ManageBookings />} />
-          </Routes>
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <Navbar />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/rooms" element={<Rooms />} />
+              <Route path="/rooms/:id" element={<RoomDetail />} />
+              <Route path="/my-bookings" element={<MyBookings />} />
+              <Route path="/admin" element={<Dashboard />} />
+              <Route path="/admin/rooms" element={<ManageRooms />} />
+              <Route path="/admin/bookings" element={<ManageBookings />} />
+            </Routes>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

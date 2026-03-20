@@ -1,4 +1,8 @@
 const Booking = require('../models/Booking');
+const Room = require('../models/Room');
+const User = require('../models/User');
+const { sendEmail } = require('../config/mailer');
+const { bookingConfirmationEmail, bookingStatusEmail } = require('../utils/emailTemplates');
 
 // @desc    Create a booking
 // @route   POST /api/bookings
@@ -31,6 +35,17 @@ const createBooking = async (req, res) => {
     });
 
     const populated = await booking.populate(['room', 'user']);
+
+    // Send booking confirmation email (non-blocking)
+    const roomDoc = await Room.findById(room);
+    if (roomDoc) {
+      sendEmail(
+        req.user.email,
+        `Booking Confirmed: ${title} 📅`,
+        bookingConfirmationEmail(booking, roomDoc, req.user)
+      ).catch(() => {});
+    }
+
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -112,18 +127,28 @@ const updateBooking = async (req, res) => {
 // @route   DELETE /api/bookings/:id
 const cancelBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate(['room', 'user']);
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    if (booking.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (booking.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
     booking.status = 'cancelled';
     await booking.save();
+
+    // Send cancellation email (non-blocking)
+    const bookingUser = booking.user;
+    if (bookingUser && bookingUser.email) {
+      sendEmail(
+        bookingUser.email,
+        `Booking Cancelled: ${booking.title}`,
+        bookingStatusEmail(booking, booking.room || {}, bookingUser, 'cancelled')
+      ).catch(() => {});
+    }
 
     res.json({ message: 'Booking cancelled' });
   } catch (error) {
@@ -144,6 +169,15 @@ const updateBookingStatus = async (req, res) => {
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Send status update email (non-blocking)
+    if (booking.user && booking.user.email) {
+      sendEmail(
+        booking.user.email,
+        `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}: ${booking.title}`,
+        bookingStatusEmail(booking, booking.room || {}, booking.user, status)
+      ).catch(() => {});
     }
 
     res.json(booking);
