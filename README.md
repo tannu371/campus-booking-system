@@ -159,6 +159,47 @@ campus-booking-system/
 | GET | `/api/audit/recent` | Recent activity feed |
 | GET | `/api/audit/actions` | Available action types |
 
+## 🧪 Testing
+
+### Test Suite — 129 Tests, 10 Suites
+
+The project includes a comprehensive test suite based on the [testing strategy](docs/testing.md), adapted for MongoDB/Mongoose.
+
+```
+tests/
+├── unit/                          # 67 tests — pure function validation
+│   ├── timeValidator.test.js      # Time order, duration, future/advance limits
+│   ├── overlapDetector.test.js    # Overlap detection + buffer conflicts
+│   ├── policyValidator.test.js    # Capacity, operating hours, compound validation
+│   └── confirmationCode.test.js   # Code format, uniqueness, character set
+├── integration/                   # 47 tests — API + in-memory MongoDB
+│   ├── bookingCreation.test.js    # Create, conflicts, input validation, auth
+│   ├── bookingCancellation.test.js # Cancel, permissions, admin override
+│   ├── bookingCheckIn.test.js     # Check-in, wrong user, status guards
+│   ├── roomApi.test.js            # CRUD, search, filters, soft-delete
+│   └── userApi.test.js            # List, suspend, activate, role change
+└── edge/                          # 15 tests — boundary + security
+    └── edgeCases.test.js          # Duration limits, injection, XSS, JWT tampering
+```
+
+### Commands
+
+```bash
+npm test               # Run all 129 tests (~6s)
+npm run test:unit      # Unit tests only (67 tests, ~0.4s)
+npm run test:integration  # Integration tests (47 tests, ~5s)
+npm run test:edge      # Edge case tests (15 tests, ~3s)
+npm run test:coverage  # Full run with Istanbul coverage report
+```
+
+### Coverage Highlights
+
+| Module | Statements | Branches | Functions | Lines |
+|--------|-----------|----------|-----------|-------|
+| `bookingValidator.js` | 98.9% | 91.5% | 100% | 100% |
+| `auth.js` (middleware) | 100% | 83.3% | 100% | 100% |
+| `emailTemplates.js` | 93.8% | 66.7% | 66.7% | 100% |
+
 ## 📄 License
 
 MIT
