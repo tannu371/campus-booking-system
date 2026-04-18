@@ -1,59 +1,78 @@
 # 🏫 Campus Room & Facility Booking System
 
-A centralized web application for booking campus facilities — classrooms, seminar halls, and meeting rooms — with real-time availability, calendar views, and admin management.
+A production-grade web application for booking campus facilities — classrooms, seminar halls, labs, and meeting rooms — with conflict-free scheduling, real-time availability calendars, comprehensive audit logging, and a full admin dashboard.
 
 ## ✨ Features
 
 ### User Features
-- 🔍 Browse and search available rooms with filters
-- 📅 Interactive calendar view for room availability
-- 📝 Book rooms for specific time slots
-- ✏️ Modify or cancel existing bookings
-- ✅ Receive booking confirmations
+- 🔍 Smart room search with type, building, and capacity filters
+- 📅 Interactive FullCalendar view for real-time room availability
+- 📝 Book rooms with attendee count and purpose tracking
+- ✔️ Check-in system for approved bookings
+- 🔖 Unique confirmation codes for every booking
+- ✏️ Cancel bookings with reason tracking
+- 🔐 Account suspension awareness (login blocked when suspended)
 
 ### Admin Features
-- 🏢 Manage rooms (add, edit, delete)
-- ✅ Approve or reject special booking requests
-- 📊 Monitor facility usage with analytics
+- 📊 **Dashboard** — Stats overview, attention panel for pending approvals, activity feed, room usage charts
+- 🏢 **Room Management** — Add/edit rooms with operating hours, buffer times, approval requirements, and soft-delete
+- 📅 **Booking Management** — Approve/reject/cancel with audit trail, admin override capability
+- 👥 **User Management** — Search, role changes (with auto-adjusted limits), suspend/activate accounts
+- 📈 **Analytics** — Daily booking trend charts, no-show rates, status breakdowns, top rooms
+- 📋 **Audit Log** — Complete system action history with expandable JSON details
+
+### System Integrity
+- ⚡ Atomic conflict detection with configurable buffer times between bookings
+- 🛡️ Booking validation: time order, duration limits, operating hours, capacity, advance window
+- 📝 Non-blocking audit logging for every system action (19 action types)
+- 🔄 Alternative room suggestions when a conflict is detected
+- 🔒 Role-based booking limits (admin: 50, faculty: 20, staff: 10, student: 5)
 
 ## 🛠 Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React (Vite) |
-| Styling | Vanilla CSS (glassmorphism, gradients, animations) |
+| Frontend | React 18 (Vite) |
+| Styling | Vanilla CSS (glassmorphism, dark theme, animations) |
 | Backend | Node.js + Express.js |
-| Database | MongoDB + Mongoose |
+| Database | MongoDB + Mongoose (with `mongodb-memory-server` fallback) |
 | Auth | JWT + bcrypt |
 | Calendar | FullCalendar.js |
+| Email | Nodemailer (Gmail SMTP) |
 
 ## 📁 Project Structure
 
 ```
 campus-booking-system/
-├── frontend/           # React + Vite frontend
-│   ├── src/
-│   │   ├── components/ # Reusable UI components
-│   │   ├── pages/      # Route-level pages
-│   │   ├── context/    # Auth & app context
-│   │   └── services/   # API helpers
-│   └── package.json
+├── frontend/
+│   └── src/
+│       ├── components/       # AdminLayout, BookingModal, RoomCard, Navbar
+│       ├── pages/
+│       │   ├── admin/        # Dashboard, ManageRooms/Bookings/Users, Analytics, AuditLog
+│       │   ├── Home.jsx      # Landing page
+│       │   ├── Rooms.jsx     # Room browser with filters
+│       │   ├── RoomDetail.jsx # Room detail + calendar
+│       │   ├── MyBookings.jsx # User bookings with check-in
+│       │   └── Login/Register
+│       ├── context/          # Auth, Theme, Toast providers
+│       └── services/         # Axios API client
 ├── backend/
-│   ├── config/         # DB config
-│   ├── middleware/      # Auth middleware
-│   ├── models/         # Mongoose schemas
-│   ├── routes/         # Express routes
-│   ├── controllers/    # Route handlers
-│   ├── server.js
-│   └── package.json
-└── README.md
+│   ├── config/               # DB connection (with memory-server fallback)
+│   ├── middleware/            # JWT auth + admin guard
+│   ├── models/               # User, Room, Booking, AuditLog
+│   ├── controllers/          # auth, booking, room, user, audit
+│   ├── routes/               # auth, booking, room, user, audit
+│   ├── utils/                # bookingValidator, auditLogger, emailTemplates
+│   ├── seedData.js           # Reusable seed module
+│   └── server.js             # Express app with auto-seed
+└── docs/                     # Project documentation
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
-- MongoDB (local or Atlas)
+- MongoDB (optional — app falls back to in-memory MongoDB automatically)
 
 ### Setup
 
@@ -67,12 +86,9 @@ campus-booking-system/
    ```bash
    cd backend
    npm install
-   # Create .env file with:
-   # MONGO_URI=mongodb://localhost:27017/campus-booking
-   # JWT_SECRET=your_secret_key
-   # PORT=5000
    npm run dev
    ```
+   The server starts on port **5001** and auto-seeds with sample data if the database is empty.
 
 3. **Frontend setup**
    ```bash
@@ -82,6 +98,66 @@ campus-booking-system/
    ```
 
 4. Open `http://localhost:5173` in your browser.
+
+### Login Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@campus.edu` | `admin123` |
+| Faculty | `sarah@campus.edu` | `faculty123` |
+| Student | `john@campus.edu` | `user123` |
+| Staff | `carol@campus.edu` | `staff123` |
+
+## 📡 API Endpoints
+
+### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/auth/me` | Get current user |
+
+### Rooms
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/rooms` | List rooms (with search/filter) |
+| GET | `/api/rooms/buildings` | Get unique buildings |
+| GET | `/api/rooms/:id` | Get room details |
+| GET | `/api/rooms/:id/schedule` | Get room schedule for a date |
+| GET | `/api/rooms/:id/utilization` | Get utilization stats (admin) |
+| POST | `/api/rooms` | Create room (admin) |
+| PUT | `/api/rooms/:id` | Update room (admin) |
+| DELETE | `/api/rooms/:id` | Soft-delete room (admin) |
+
+### Bookings
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/bookings` | Create booking (with conflict check) |
+| GET | `/api/bookings/mine` | Get my bookings |
+| GET | `/api/bookings` | List all bookings (admin) |
+| GET | `/api/bookings/stats` | Booking statistics (admin) |
+| GET | `/api/bookings/room/:roomId` | Room bookings |
+| PUT | `/api/bookings/:id` | Update booking |
+| PUT | `/api/bookings/:id/status` | Approve/reject (admin) |
+| PUT | `/api/bookings/:id/checkin` | Check in |
+| POST | `/api/bookings/override` | Admin override |
+| DELETE | `/api/bookings/:id` | Cancel booking |
+
+### Users (Admin)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users` | List users with stats |
+| GET | `/api/users/stats` | User statistics |
+| GET | `/api/users/:id` | User profile + history |
+| PUT | `/api/users/:id/status` | Suspend/activate |
+| PUT | `/api/users/:id/role` | Change role |
+
+### Audit (Admin)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/audit` | Paginated audit logs |
+| GET | `/api/audit/recent` | Recent activity feed |
+| GET | `/api/audit/actions` | Available action types |
 
 ## 📄 License
 

@@ -1,68 +1,80 @@
 import { Link } from 'react-router-dom';
-import './RoomCard.css';
-
-const typeLabels = {
-  classroom: 'Classroom',
-  seminar_hall: 'Seminar Hall',
-  meeting_room: 'Meeting Room',
-  conference_room: 'Conference Room',
-  lab: 'Lab'
-};
-
-const typeIcons = {
-  classroom: '📚',
-  seminar_hall: '🎤',
-  meeting_room: '🤝',
-  conference_room: '💼',
-  lab: '🔬'
-};
 
 const RoomCard = ({ room }) => {
+  const typeLabels = {
+    classroom: 'Classroom',
+    seminar_hall: 'Seminar Hall',
+    meeting_room: 'Meeting Room',
+    conference_room: 'Conference Room',
+    lab: 'Lab'
+  };
+
+  const typeColors = {
+    classroom: '#3b82f6',
+    seminar_hall: '#8b5cf6',
+    meeting_room: '#f59e0b',
+    conference_room: '#ef4444',
+    lab: '#22c55e'
+  };
+
+  const color = typeColors[room.type] || '#6b7280';
+
   return (
-    <Link to={`/rooms/${room._id}`} className="room-card card">
-      <div className="room-card-image">
-        <div className="room-card-icon">{typeIcons[room.type] || '🏫'}</div>
-        <div className="room-card-badge badge badge-type">
-          {typeLabels[room.type] || room.type}
-        </div>
-      </div>
-      <div className="card-body">
-        <h3 className="room-card-name">{room.name}</h3>
-        <div className="room-card-details">
-          <span className="room-detail">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            {room.capacity} seats
+    <Link to={`/rooms/${room._id}`} className="room-card glass" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <div style={{
+        height: 8,
+        background: color,
+        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+        margin: '-20px -20px 16px -20px'
+      }}></div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{room.name}</h3>
+        {room.requiresApproval && (
+          <span className="badge" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontSize: '0.65rem', padding: '2px 6px', flexShrink: 0 }}>
+            Approval
           </span>
-          <span className="room-detail">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            {room.building}, Floor {room.floor}
-          </span>
-        </div>
-        {room.amenities && room.amenities.length > 0 && (
-          <div className="room-card-amenities">
-            {room.amenities.slice(0, 3).map((amenity, i) => (
-              <span key={i} className="amenity-tag">{amenity}</span>
-            ))}
-            {room.amenities.length > 3 && (
-              <span className="amenity-more">+{room.amenities.length - 3}</span>
-            )}
-          </div>
         )}
-        <div className="room-card-footer">
-          <span className={`room-status ${room.isAvailable ? 'status-available' : 'status-unavailable'}`}>
-            {room.isAvailable ? '● Available' : '● Unavailable'}
-          </span>
-          <span className="room-book-cta">Book Now →</span>
-        </div>
       </div>
+
+      <span className="badge" style={{ background: `${color}20`, color, fontSize: '0.72rem', padding: '2px 8px', marginBottom: 10, display: 'inline-block' }}>
+        {typeLabels[room.type] || room.type}
+      </span>
+
+      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+        <span>📍 {room.building} · Floor {room.floor}</span>
+        <span>👥 Capacity: {room.capacity}</span>
+        <span>🕐 {room.operatingHoursStart || '07:00'} – {room.operatingHoursEnd || '22:00'}</span>
+      </div>
+
+      {room.amenities && room.amenities.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+          {room.amenities.slice(0, 4).map((a, i) => (
+            <span key={i} style={{
+              fontSize: '0.7rem',
+              padding: '2px 6px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--surface)',
+              color: 'var(--text-muted)'
+            }}>{a}</span>
+          ))}
+          {room.amenities.length > 4 && (
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>+{room.amenities.length - 4} more</span>
+          )}
+        </div>
+      )}
+
+      {room.description && (
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          {room.description}
+        </p>
+      )}
+
+      {!room.isAvailable && (
+        <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#ef4444', fontWeight: 600 }}>
+          ⚠️ Currently unavailable
+        </div>
+      )}
     </Link>
   );
 };

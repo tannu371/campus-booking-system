@@ -1,132 +1,152 @@
-import { useState } from 'react';
-import './BookingModal.css';
+import { useState, useEffect } from 'react';
+import api from '../services/api';
+import { useToast } from '../context/ToastContext';
 
-const BookingModal = ({ room, onClose, onSubmit, existingBooking }) => {
-  const [formData, setFormData] = useState({
-    title: existingBooking?.title || '',
-    date: existingBooking?.date ? new Date(existingBooking.date).toISOString().split('T')[0] : '',
-    startTime: existingBooking?.startTime || '',
-    endTime: existingBooking?.endTime || '',
-    purpose: existingBooking?.purpose || ''
+const BookingModal = ({ room, selectedDate, selectedTime, onClose, onBooked }) => {
+  const { showToast } = useToast();
+  const [form, setForm] = useState({
+    title: '',
+    date: selectedDate || '',
+    startTime: selectedTime || '',
+    endTime: '',
+    purpose: '',
+    attendeeCount: ''
   });
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(null);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    if (selectedDate) setForm(f => ({ ...f, date: selectedDate }));
+    if (selectedTime) setForm(f => ({ ...f, startTime: selectedTime }));
+  }, [selectedDate, selectedTime]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    setLoading(true);
     try {
-      await onSubmit({
-        ...formData,
-        room: room._id
+      const data = {
+        room: room._id,
+        title: form.title,
+        date: form.date,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        purpose: form.purpose,
+        attendeeCount: form.attendeeCount ? parseInt(form.attendeeCount) : null
+      };
+
+      const res = await api.post('/bookings', data);
+      const booking = res.data;
+
+      setSuccess({
+        confirmationCode: booking.confirmationCode,
+        status: booking.status,
+        title: booking.title
       });
+
+      showToast(
+        booking.status === 'pending'
+          ? 'Booking submitted for approval!'
+          : 'Room booked successfully!',
+        'success'
+      );
+
+      if (onBooked) onBooked(booking);
+    } catch (err) {
+      const errData = err.response?.data;
+      if (errData?.error === 'BOOKING_CONFLICT') {
+        showToast('Time slot conflicts with an existing booking', 'error');
+      } else if (errData?.errors) {
+        showToast(errData.errors[0]?.message || 'Validation failed', 'error');
+      } else {
+        showToast(errData?.message || 'Failed to create booking', 'error');
+      }
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const timeSlots = [];
-  for (let h = 7; h <= 21; h++) {
-    timeSlots.push(`${h.toString().padStart(2, '0')}:00`);
-    timeSlots.push(`${h.toString().padStart(2, '0')}:30`);
+  if (success) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>
+              {success.status === 'pending' ? '📋' : '✅'}
+            </div>
+            <h2 style={{ marginBottom: 8 }}>
+              {success.status === 'pending' ? 'Submitted for Approval' : 'Booking Confirmed!'}
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>{success.title}</p>
+            {success.confirmationCode && (
+              <div style={{
+                background: 'var(--surface)',
+                padding: '12px 20px',
+                borderRadius: 'var(--radius-md)',
+                display: 'inline-block',
+                marginBottom: 16
+              }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>Confirmation Code</div>
+                <div style={{ fontFamily: 'monospace', fontSize: '1.2rem', fontWeight: 700, letterSpacing: 2 }}>
+                  {success.confirmationCode}
+                </div>
+              </div>
+            )}
+            {success.status === 'pending' && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                This room requires admin approval. You'll be notified when it's approved.
+              </p>
+            )}
+            <button className="btn btn-primary" onClick={onClose}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal booking-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">
-            {existingBooking ? 'Modify Booking' : 'Book Room'}
-          </h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h2>Book {room.name}</h2>
+        {room.requiresApproval && (
+          <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 16, fontSize: '0.85rem', color: '#f59e0b' }}>
+            ⚠️ This room requires admin approval
+          </div>
+        )}
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+          {room.building} · Floor {room.floor} · Capacity {room.capacity} · Hours {room.operatingHoursStart || '07:00'}–{room.operatingHoursEnd || '22:00'}
+          {room.bufferMinutes > 0 && ` · ${room.bufferMinutes}min buffer`}
         </div>
-
-        <div className="booking-room-info">
-          <span className="booking-room-name">{room.name}</span>
-          <span className="booking-room-detail">{room.building} • Floor {room.floor} • {room.capacity} seats</span>
-        </div>
-
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Booking Title *</label>
-            <input
-              type="text"
-              name="title"
-              className="form-input"
-              placeholder="e.g., Team Meeting, Lecture, Workshop"
-              value={formData.title}
-              onChange={handleChange}
-              required
-            />
+            <label className="form-label">Title *</label>
+            <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required placeholder="e.g. Study Group, Workshop..." />
           </div>
-
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label">Date *</label>
+              <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required min={new Date().toISOString().split('T')[0]} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Start *</label>
+              <input className="form-input" type="time" value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label">End *</label>
+              <input className="form-input" type="time" value={form.endTime} onChange={e => setForm({ ...form, endTime: e.target.value })} required />
+            </div>
+          </div>
           <div className="form-group">
-            <label className="form-label">Date *</label>
-            <input
-              type="date"
-              name="date"
-              className="form-input"
-              value={formData.date}
-              onChange={handleChange}
-              min={new Date().toISOString().split('T')[0]}
-              required
-            />
+            <label className="form-label">Attendees</label>
+            <input className="form-input" type="number" value={form.attendeeCount} onChange={e => setForm({ ...form, attendeeCount: e.target.value })} placeholder={`Max ${room.capacity}`} min="1" max={room.capacity} />
           </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Start Time *</label>
-              <select
-                name="startTime"
-                className="form-select"
-                value={formData.startTime}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select</option>
-                {timeSlots.map(slot => (
-                  <option key={slot} value={slot}>{slot}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">End Time *</label>
-              <select
-                name="endTime"
-                className="form-select"
-                value={formData.endTime}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select</option>
-                {timeSlots.filter(s => s > formData.startTime).map(slot => (
-                  <option key={slot} value={slot}>{slot}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <div className="form-group">
             <label className="form-label">Purpose</label>
-            <textarea
-              name="purpose"
-              className="form-textarea"
-              placeholder="Describe the purpose of your booking..."
-              value={formData.purpose}
-              onChange={handleChange}
-              rows={3}
-            />
+            <textarea className="form-textarea" value={form.purpose} onChange={e => setForm({ ...form, purpose: e.target.value })} rows="2" placeholder="Brief description..."></textarea>
           </div>
-
-          <div className="booking-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Processing...' : existingBooking ? 'Update Booking' : 'Confirm Booking'}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Booking...' : room.requiresApproval ? 'Submit for Approval' : 'Confirm Booking'}
             </button>
           </div>
         </form>

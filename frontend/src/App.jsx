@@ -12,6 +12,9 @@ import MyBookings from './pages/MyBookings';
 import Dashboard from './pages/admin/Dashboard';
 import ManageRooms from './pages/admin/ManageRooms';
 import ManageBookings from './pages/admin/ManageBookings';
+import ManageUsers from './pages/admin/ManageUsers';
+import Analytics from './pages/admin/Analytics';
+import AuditLog from './pages/admin/AuditLog';
 
 function App() {
   return (
@@ -30,6 +33,9 @@ function App() {
               <Route path="/admin" element={<Dashboard />} />
               <Route path="/admin/rooms" element={<ManageRooms />} />
               <Route path="/admin/bookings" element={<ManageBookings />} />
+              <Route path="/admin/users" element={<ManageUsers />} />
+              <Route path="/admin/analytics" element={<Analytics />} />
+              <Route path="/admin/audit" element={<AuditLog />} />
             </Routes>
           </ToastProvider>
         </AuthProvider>

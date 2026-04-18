@@ -1,25 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import BookingModal from '../components/BookingModal';
-import './MyBookings.css';
 
 const MyBookings = () => {
   const { user } = useAuth();
-  const toast = useToast();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [editBooking, setEditBooking] = useState(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    if (!user) { navigate('/login'); return; }
     fetchBookings();
   }, [user]);
 
@@ -28,139 +22,134 @@ const MyBookings = () => {
       const res = await api.get('/bookings/mine');
       setBookings(res.data);
     } catch (err) {
-      toast.error('Failed to load bookings');
+      showToast('Failed to load bookings', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = async (id) => {
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
+    if (!confirm('Cancel this booking?')) return;
     try {
       await api.delete(`/bookings/${id}`);
-      toast.success('Booking cancelled');
+      showToast('Booking cancelled', 'success');
       fetchBookings();
     } catch (err) {
-      toast.error('Failed to cancel booking');
+      showToast('Failed to cancel', 'error');
     }
   };
 
-  const handleModify = async (data) => {
+  const handleCheckIn = async (id) => {
     try {
-      await api.put(`/bookings/${editBooking._id}`, data);
-      toast.success('Booking updated');
-      setEditBooking(null);
+      await api.put(`/bookings/${id}/checkin`);
+      showToast('Checked in successfully! ✓', 'success');
       fetchBookings();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Update failed');
+      showToast(err.response?.data?.message || 'Failed to check in', 'error');
     }
   };
 
-  const filtered = filter === 'all'
-    ? bookings
-    : bookings.filter(b => b.status === filter);
+  const filtered = bookings.filter(b => {
+    if (filter === 'all') return true;
+    if (filter === 'upcoming') return ['approved', 'pending'].includes(b.status) && new Date(b.date) >= new Date(new Date().toDateString());
+    if (filter === 'past') return new Date(b.date) < new Date(new Date().toDateString()) || ['completed', 'no_show'].includes(b.status);
+    return b.status === filter;
+  });
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const statusColors = {
+    approved: { bg: 'rgba(34,197,94,0.15)', color: '#22c55e', label: 'Approved' },
+    pending: { bg: 'rgba(245,158,11,0.15)', color: '#f59e0b', label: 'Pending' },
+    rejected: { bg: 'rgba(239,68,68,0.15)', color: '#ef4444', label: 'Rejected' },
+    cancelled: { bg: 'rgba(107,114,128,0.15)', color: '#6b7280', label: 'Cancelled' },
+    completed: { bg: 'rgba(59,130,246,0.15)', color: '#3b82f6', label: 'Completed' },
+    no_show: { bg: 'rgba(239,68,68,0.15)', color: '#ef4444', label: 'No Show' }
   };
+
+  const isToday = (date) => new Date(date).toDateString() === new Date().toDateString();
+  const canCheckIn = (b) => b.status === 'approved' && !b.checkedIn && isToday(b.date);
 
   return (
-    <div className="page">
-      <div className="container">
-        <div className="page-header">
-          <h1 className="page-title">My Bookings</h1>
-          <p className="page-subtitle">Manage your room reservations</p>
+    <div className="container" style={{ paddingTop: 32, paddingBottom: 40 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 4 }}>My Bookings</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>{bookings.length} total bookings</p>
         </div>
+        <Link to="/rooms" className="btn btn-primary">+ New Booking</Link>
+      </div>
 
-        <div className="bookings-filters">
-          {['all', 'approved', 'pending', 'cancelled', 'rejected'].map(f => (
-            <button
-              key={f}
-              className={`filter-btn ${filter === f ? 'filter-active' : ''}`}
-              onClick={() => setFilter(f)}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-              {f !== 'all' && (
-                <span className="filter-count">
-                  {bookings.filter(b => b.status === f).length}
-                </span>
-              )}
-            </button>
-          ))}
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 24, overflowX: 'auto' }}>
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'upcoming', label: 'Upcoming' },
+          { key: 'pending', label: 'Pending' },
+          { key: 'past', label: 'Past' },
+          { key: 'cancelled', label: 'Cancelled' }
+        ].map(f => (
+          <button key={f.key} className={`btn ${filter === f.key ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+            onClick={() => setFilter(f.key)}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="glass" style={{ textAlign: 'center', padding: 60, borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 16 }}>📅</div>
+          <h3>No bookings found</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
+            {filter === 'all' ? "You haven't made any bookings yet." : `No ${filter} bookings.`}
+          </p>
+          <Link to="/rooms" className="btn btn-primary">Browse Rooms</Link>
         </div>
-
-        {loading ? (
-          <div className="bookings-loading">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="skeleton" style={{ height: 80, marginBottom: 12, borderRadius: 12 }}></div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="rooms-empty">
-            <div className="empty-icon">📅</div>
-            <h3>No bookings found</h3>
-            <p>{filter === 'all' ? "You haven't booked any rooms yet." : `No ${filter} bookings.`}</p>
-            <button className="btn btn-primary" onClick={() => navigate('/rooms')} style={{ marginTop: 16 }}>
-              Browse Rooms
-            </button>
-          </div>
-        ) : (
-          <div className="bookings-list">
-            {filtered.map(booking => (
-              <div key={booking._id} className="booking-item glass">
-                <div className="booking-item-main">
-                  <div className="booking-item-info">
-                    <h3 className="booking-item-title">{booking.title}</h3>
-                    <p className="booking-item-room">
-                      {booking.room?.name || 'Room'} • {booking.room?.building || ''}
-                    </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {filtered.map(b => {
+            const st = statusColors[b.status] || statusColors.pending;
+            return (
+              <div key={b._id} className="glass" style={{ padding: 20, borderRadius: 'var(--radius-lg)', borderLeft: `4px solid ${st.color}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>{b.title}</h3>
+                      <span className="badge" style={{ background: st.bg, color: st.color, fontSize: '0.7rem', padding: '2px 8px' }}>{st.label}</span>
+                      {b.checkedIn && <span className="badge" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontSize: '0.65rem', padding: '1px 6px' }}>✓ Checked In</span>}
+                    </div>
+                    <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      <span>🏢 {b.room?.name || 'Room'}</span>
+                      <span>📅 {new Date(b.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                      <span>🕐 {b.startTime} – {b.endTime}</span>
+                      {b.attendeeCount && <span>👥 {b.attendeeCount}</span>}
+                    </div>
+                    {b.purpose && <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 6 }}>{b.purpose}</p>}
+                    {b.confirmationCode && (
+                      <div style={{ marginTop: 6, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        Code: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{b.confirmationCode}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="booking-item-time">
-                    <span className="booking-date">{formatDate(booking.date)}</span>
-                    <span className="booking-time">{booking.startTime} - {booking.endTime}</span>
-                  </div>
-                  <span className={`badge badge-${booking.status}`}>
-                    {booking.status}
-                  </span>
-                  {(booking.status === 'approved' || booking.status === 'pending') && (
-                    <div className="booking-item-actions">
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => setEditBooking(booking)}
-                      >
-                        Modify
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {canCheckIn(b) && (
+                      <button className="btn btn-success" style={{ fontSize: '0.82rem', padding: '6px 14px' }} onClick={() => handleCheckIn(b._id)}>
+                        ✓ Check In
                       </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleCancel(booking._id)}
-                      >
+                    )}
+                    {['approved', 'pending'].includes(b.status) && (
+                      <button className="btn btn-danger" style={{ fontSize: '0.82rem', padding: '6px 14px' }} onClick={() => handleCancel(b._id)}>
                         Cancel
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-                {booking.purpose && (
-                  <p className="booking-item-purpose">{booking.purpose}</p>
-                )}
               </div>
-            ))}
-          </div>
-        )}
-
-        {editBooking && editBooking.room && (
-          <BookingModal
-            room={editBooking.room}
-            existingBooking={editBooking}
-            onClose={() => setEditBooking(null)}
-            onSubmit={handleModify}
-          />
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

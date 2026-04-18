@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import './Admin.css';
+import AdminLayout from '../../components/AdminLayout';
 
 const ManageRooms = () => {
   const { user } = useAuth();
-  const toast = useToast();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editRoom, setEditRoom] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '', type: 'classroom', capacity: '', building: '',
-    floor: '', amenities: '', description: '', isAvailable: true
+  const [form, setForm] = useState({
+    name: '', type: 'classroom', capacity: '', building: '', floor: '',
+    amenities: '', description: '', isAvailable: true,
+    operatingHoursStart: '07:00', operatingHoursEnd: '22:00',
+    bufferMinutes: 10, requiresApproval: false, internalNotes: ''
   });
 
   useEffect(() => {
@@ -28,214 +30,206 @@ const ManageRooms = () => {
       const res = await api.get('/rooms');
       setRooms(res.data);
     } catch (err) {
-      toast.error('Failed to load rooms');
+      showToast('Failed to load rooms', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '', type: 'classroom', capacity: '', building: '',
-      floor: '', amenities: '', description: '', isAvailable: true
-    });
-    setEditRoom(null);
-    setShowForm(false);
-  };
-
-  const openEdit = (room) => {
-    setEditRoom(room);
-    setFormData({
-      name: room.name,
-      type: room.type,
-      capacity: room.capacity,
-      building: room.building,
-      floor: room.floor,
-      amenities: room.amenities?.join(', ') || '',
-      description: room.description || '',
-      isAvailable: room.isAvailable
-    });
-    setShowForm(true);
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = {
-      ...formData,
-      capacity: parseInt(formData.capacity),
-      floor: parseInt(formData.floor),
-      amenities: formData.amenities.split(',').map(a => a.trim()).filter(Boolean)
-    };
     try {
+      const data = {
+        ...form,
+        capacity: parseInt(form.capacity),
+        floor: parseInt(form.floor),
+        bufferMinutes: parseInt(form.bufferMinutes) || 10,
+        amenities: form.amenities.split(',').map(a => a.trim()).filter(Boolean)
+      };
       if (editRoom) {
         await api.put(`/rooms/${editRoom._id}`, data);
-        toast.success('Room updated');
+        showToast('Room updated', 'success');
       } else {
         await api.post('/rooms', data);
-        toast.success('Room created');
+        showToast('Room created', 'success');
       }
       resetForm();
       fetchRooms();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save room');
+      showToast(err.response?.data?.message || 'Failed to save room', 'error');
     }
+  };
+
+  const handleEdit = (room) => {
+    setEditRoom(room);
+    setForm({
+      name: room.name, type: room.type, capacity: room.capacity.toString(),
+      building: room.building, floor: room.floor.toString(),
+      amenities: (room.amenities || []).join(', '),
+      description: room.description || '', isAvailable: room.isAvailable,
+      operatingHoursStart: room.operatingHoursStart || '07:00',
+      operatingHoursEnd: room.operatingHoursEnd || '22:00',
+      bufferMinutes: room.bufferMinutes || 10,
+      requiresApproval: room.requiresApproval || false,
+      internalNotes: room.internalNotes || ''
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this room?')) return;
+    if (!confirm('Deactivate this room? Existing bookings will not be cancelled.')) return;
     try {
       await api.delete(`/rooms/${id}`);
-      toast.success('Room deleted');
+      showToast('Room deactivated', 'success');
       fetchRooms();
     } catch (err) {
-      toast.error('Failed to delete');
+      showToast('Failed to deactivate', 'error');
     }
   };
 
-  const typeLabels = {
-    classroom: 'Classroom', seminar_hall: 'Seminar Hall',
-    meeting_room: 'Meeting Room', conference_room: 'Conference Room', lab: 'Lab'
+  const resetForm = () => {
+    setShowForm(false);
+    setEditRoom(null);
+    setForm({ name: '', type: 'classroom', capacity: '', building: '', floor: '', amenities: '', description: '', isAvailable: true, operatingHoursStart: '07:00', operatingHoursEnd: '22:00', bufferMinutes: 10, requiresApproval: false, internalNotes: '' });
+  };
+
+  const typeBadge = (type) => {
+    const colors = { classroom: '#3b82f6', seminar_hall: '#8b5cf6', meeting_room: '#f59e0b', conference_room: '#ef4444', lab: '#22c55e' };
+    return <span className="badge" style={{ background: `${colors[type] || '#6b7280'}20`, color: colors[type] || '#6b7280', fontSize: '0.72rem', padding: '2px 8px' }}>{type.replace('_', ' ')}</span>;
   };
 
   return (
-    <div className="page">
-      <div className="container">
-        <div className="admin-header">
-          <div>
-            <h1 className="page-title">Manage Rooms</h1>
-            <p className="page-subtitle">Add, edit, and manage campus facilities</p>
-          </div>
-          <div className="admin-nav">
-            <Link to="/admin" className="admin-nav-link">Overview</Link>
-            <Link to="/admin/rooms" className="admin-nav-link active">Rooms</Link>
-            <Link to="/admin/bookings" className="admin-nav-link">Bookings</Link>
+    <AdminLayout>
+      <div className="admin-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1>Manage Rooms</h1>
+          <p>{rooms.length} rooms configured</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Add Room</button>
+      </div>
+
+      {/* Room Form Modal */}
+      {showForm && (
+        <div className="modal-overlay" onClick={resetForm}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
+            <h2>{editRoom ? 'Edit Room' : 'Add New Room'}</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="room-form-grid">
+                <div className="form-group">
+                  <label className="form-label">Room Name *</label>
+                  <input className="form-input" name="name" value={form.name} onChange={handleChange} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Type *</label>
+                  <select className="form-select" name="type" value={form.type} onChange={handleChange}>
+                    <option value="classroom">Classroom</option>
+                    <option value="seminar_hall">Seminar Hall</option>
+                    <option value="meeting_room">Meeting Room</option>
+                    <option value="conference_room">Conference Room</option>
+                    <option value="lab">Lab</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Building *</label>
+                  <input className="form-input" name="building" value={form.building} onChange={handleChange} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Floor *</label>
+                  <input className="form-input" type="number" name="floor" value={form.floor} onChange={handleChange} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Capacity *</label>
+                  <input className="form-input" type="number" name="capacity" value={form.capacity} onChange={handleChange} required min="1" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Buffer (min)</label>
+                  <input className="form-input" type="number" name="bufferMinutes" value={form.bufferMinutes} onChange={handleChange} min="0" max="60" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Opens At</label>
+                  <input className="form-input" type="time" name="operatingHoursStart" value={form.operatingHoursStart} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Closes At</label>
+                  <input className="form-input" type="time" name="operatingHoursEnd" value={form.operatingHoursEnd} onChange={handleChange} />
+                </div>
+                <div className="form-group room-form-full">
+                  <label className="form-label">Amenities (comma separated)</label>
+                  <input className="form-input" name="amenities" value={form.amenities} onChange={handleChange} placeholder="Projector, WiFi, AC..." />
+                </div>
+                <div className="form-group room-form-full">
+                  <label className="form-label">Description</label>
+                  <textarea className="form-textarea" name="description" value={form.description} onChange={handleChange} rows="2"></textarea>
+                </div>
+                <div className="form-group room-form-full">
+                  <label className="form-label">Internal Notes (admin only)</label>
+                  <textarea className="form-textarea" name="internalNotes" value={form.internalNotes} onChange={handleChange} rows="2"></textarea>
+                </div>
+                <div className="form-group" style={{ display: 'flex', gap: 20 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.88rem' }}>
+                    <input type="checkbox" name="isAvailable" checked={form.isAvailable} onChange={handleChange} /> Available
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.88rem' }}>
+                    <input type="checkbox" name="requiresApproval" checked={form.requiresApproval} onChange={handleChange} /> Requires Approval
+                  </label>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+                <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
+                <button type="submit" className="btn btn-primary">{editRoom ? 'Update' : 'Create'} Room</button>
+              </div>
+            </form>
           </div>
         </div>
+      )}
 
-        <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(true); }} style={{ marginBottom: 24 }}>
-          + Add New Room
-        </button>
-
-        {showForm && (
-          <div className="modal-overlay" onClick={resetForm}>
-            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
-              <div className="modal-header">
-                <h2 className="modal-title">{editRoom ? 'Edit Room' : 'Add New Room'}</h2>
-                <button className="modal-close" onClick={resetForm}>×</button>
-              </div>
-              <form onSubmit={handleSubmit}>
-                <div className="room-form-grid">
-                  <div className="form-group">
-                    <label className="form-label">Room Name *</label>
-                    <input type="text" className="form-input" value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Type *</label>
-                    <select className="form-select" value={formData.type}
-                      onChange={e => setFormData({...formData, type: e.target.value})}>
-                      <option value="classroom">Classroom</option>
-                      <option value="seminar_hall">Seminar Hall</option>
-                      <option value="meeting_room">Meeting Room</option>
-                      <option value="conference_room">Conference Room</option>
-                      <option value="lab">Lab</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Capacity *</label>
-                    <input type="number" className="form-input" value={formData.capacity}
-                      onChange={e => setFormData({...formData, capacity: e.target.value})} required min="1" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Building *</label>
-                    <input type="text" className="form-input" value={formData.building}
-                      onChange={e => setFormData({...formData, building: e.target.value})} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Floor *</label>
-                    <input type="number" className="form-input" value={formData.floor}
-                      onChange={e => setFormData({...formData, floor: e.target.value})} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Available</label>
-                    <select className="form-select" value={formData.isAvailable}
-                      onChange={e => setFormData({...formData, isAvailable: e.target.value === 'true'})}>
-                      <option value="true">Yes</option>
-                      <option value="false">No</option>
-                    </select>
-                  </div>
-                  <div className="form-group room-form-full">
-                    <label className="form-label">Amenities (comma-separated)</label>
-                    <input type="text" className="form-input" placeholder="Projector, Whiteboard, AC, WiFi"
-                      value={formData.amenities}
-                      onChange={e => setFormData({...formData, amenities: e.target.value})} />
-                  </div>
-                  <div className="form-group room-form-full">
-                    <label className="form-label">Description</label>
-                    <textarea className="form-textarea" value={formData.description}
-                      onChange={e => setFormData({...formData, description: e.target.value})} rows={3} />
-                  </div>
-                </div>
-                <div className="booking-actions">
-                  <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">
-                    {editRoom ? 'Update Room' : 'Create Room'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
+      {/* Rooms Table */}
+      <div className="admin-section" style={{ padding: 0, overflow: 'auto' }}>
         {loading ? (
-          <div className="skeleton" style={{ height: 300, borderRadius: 16 }}></div>
-        ) : rooms.length === 0 ? (
-          <div className="rooms-empty">
-            <div className="empty-icon">🏢</div>
-            <h3>No rooms yet</h3>
-            <p>Add your first room to get started.</p>
-          </div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
         ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Capacity</th>
-                  <th>Building</th>
-                  <th>Floor</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rooms.map(room => (
-                  <tr key={room._id}>
-                    <td style={{ fontWeight: 600 }}>{room.name}</td>
-                    <td><span className="badge badge-type">{typeLabels[room.type]}</span></td>
-                    <td>{room.capacity}</td>
-                    <td>{room.building}</td>
-                    <td>{room.floor}</td>
-                    <td>
-                      <span className={room.isAvailable ? 'text-success' : 'text-danger'} style={{ fontWeight: 500, fontSize: '0.85rem' }}>
-                        {room.isAvailable ? '● Available' : '● Unavailable'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(room)}>Edit</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(room._id)}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['Room', 'Building', 'Type', 'Capacity', 'Hours', 'Status', 'Actions'].map(h => (
+                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', borderBottom: '2px solid var(--border)', background: 'var(--bg-secondary)' }}>{h}</th>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {rooms.map(room => (
+                <tr key={room._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 16px' }}>
+                    <strong>{room.name}</strong>
+                    {room.requiresApproval && <span className="badge" style={{ marginLeft: 6, fontSize: '0.65rem', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 6px' }}>Approval</span>}
+                  </td>
+                  <td style={{ padding: '12px 16px', fontSize: '0.88rem' }}>{room.building} · F{room.floor}</td>
+                  <td style={{ padding: '12px 16px' }}>{typeBadge(room.type)}</td>
+                  <td style={{ padding: '12px 16px', fontWeight: 600 }}>{room.capacity}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{room.operatingHoursStart}–{room.operatingHoursEnd}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span className="badge" style={{ background: room.isAvailable ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)', color: room.isAvailable ? '#22c55e' : '#ef4444', fontSize: '0.72rem', padding: '2px 8px' }}>
+                      {room.isAvailable ? 'Available' : 'Unavailable'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div className="table-actions">
+                      <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '4px 10px' }} onClick={() => handleEdit(room)}>Edit</button>
+                      <button className="btn btn-danger" style={{ fontSize: '0.75rem', padding: '4px 10px' }} onClick={() => handleDelete(room._id)}>Deactivate</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

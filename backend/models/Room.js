@@ -40,9 +40,40 @@ const roomSchema = new mongoose.Schema({
   isAvailable: {
     type: Boolean,
     default: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  operatingHoursStart: {
+    type: String,
+    default: '07:00'
+  },
+  operatingHoursEnd: {
+    type: String,
+    default: '22:00'
+  },
+  bufferMinutes: {
+    type: Number,
+    default: 10,
+    min: 0,
+    max: 60
+  },
+  requiresApproval: {
+    type: Boolean,
+    default: false
+  },
+  internalNotes: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true
 });
+
+// Index for efficient queries
+roomSchema.index({ building: 1, floor: 1 });
+roomSchema.index({ type: 1, isAvailable: 1, isActive: 1 });
 
 module.exports = mongoose.model('Room', roomSchema);

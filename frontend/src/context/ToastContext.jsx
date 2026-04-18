@@ -20,7 +20,7 @@ export const ToastProvider = ({ children }) => {
   const info = useCallback((msg) => addToast(msg, 'info'), [addToast]);
 
   return (
-    <ToastContext.Provider value={{ success, error, info }}>
+    <ToastContext.Provider value={{ success, error, info, showToast: addToast }}>
       {children}
       <div className="toast-container">
         {toasts.map(toast => (

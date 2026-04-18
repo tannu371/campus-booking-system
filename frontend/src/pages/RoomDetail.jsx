@@ -30,7 +30,7 @@ const RoomDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const toast = useToast();
+  const { showToast } = useToast();
   const [room, setRoom] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [showBooking, setShowBooking] = useState(false);
@@ -46,7 +46,7 @@ const RoomDetail = () => {
       const res = await api.get(`/rooms/${id}`);
       setRoom(res.data);
     } catch (err) {
-      toast.error('Room not found');
+      showToast('Room not found', 'error');
       navigate('/rooms');
     } finally {
       setLoading(false);
@@ -62,22 +62,23 @@ const RoomDetail = () => {
     }
   };
 
-  const handleBook = async (bookingData) => {
-    try {
-      await api.post('/bookings', bookingData);
-      toast.success('Room booked successfully!');
-      setShowBooking(false);
-      fetchBookings();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Booking failed');
-    }
+  const handleBooked = () => {
+    setShowBooking(false);
+    fetchBookings();
+  };
+
+  const statusColors = {
+    approved: '#22c55e',
+    pending: '#f59e0b',
+    rejected: '#6b7280',
+    cancelled: '#6b7280'
   };
 
   const calendarEvents = bookings.map(b => ({
     title: b.title || 'Booked',
     start: `${new Date(b.date).toISOString().split('T')[0]}T${b.startTime}`,
     end: `${new Date(b.date).toISOString().split('T')[0]}T${b.endTime}`,
-    backgroundColor: b.status === 'approved' ? '#E67E22' : '#F39C12',
+    backgroundColor: statusColors[b.status] || '#E67E22',
     borderColor: 'transparent'
   }));
 
@@ -130,12 +131,12 @@ const RoomDetail = () => {
                 </span>
               </div>
               <div className="meta-item">
-                <span className="meta-label">Building</span>
-                <span className="meta-value">{room.building}</span>
+                <span className="meta-label">Hours</span>
+                <span className="meta-value">{room.operatingHoursStart || '07:00'} – {room.operatingHoursEnd || '22:00'}</span>
               </div>
               <div className="meta-item">
-                <span className="meta-label">Floor</span>
-                <span className="meta-value">{room.floor}</span>
+                <span className="meta-label">Buffer</span>
+                <span className="meta-value">{room.bufferMinutes || 10} min</span>
               </div>
             </div>
 
@@ -157,12 +158,18 @@ const RoomDetail = () => {
               </div>
             )}
 
+            {room.requiresApproval && (
+              <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: '0.85rem', color: '#f59e0b', marginBottom: 12 }}>
+                ⚠️ This room requires admin approval for bookings
+              </div>
+            )}
+
             {user && room.isAvailable && (
               <button
                 className="btn btn-primary btn-lg book-room-btn"
                 onClick={() => setShowBooking(true)}
               >
-                Book This Room
+                {room.requiresApproval ? 'Request Booking' : 'Book This Room'}
               </button>
             )}
 
@@ -198,7 +205,7 @@ const RoomDetail = () => {
           <BookingModal
             room={room}
             onClose={() => setShowBooking(false)}
-            onSubmit={handleBook}
+            onBooked={handleBooked}
           />
         )}
       </div>
