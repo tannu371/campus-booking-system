@@ -2,6 +2,10 @@
   max-width: 560px;
 }
 
+.modal-wide {
+  max-width: 700px;
+}
+
 .booking-room-info {
   display: flex;
   flex-direction: column;
@@ -24,12 +28,20 @@
   color: var(--text-secondary);
 }
 
+/* Date/Time Grid */
+.booking-datetime-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-md);
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-md);
 }
 
+/* Action Buttons */
 .booking-actions {
   display: flex;
   gap: var(--space-md);
@@ -40,5 +52,32 @@
 }
 
 .booking-actions .btn {
-  min-width: 140px;
+  min-width: 120px;
+}
+
+/* ═══════ Responsive ═══════ */
+@media (max-width: 768px) {
+  .booking-datetime-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  .booking-datetime-grid .form-group {
+    margin-bottom: var(--space-sm);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-actions {
+    flex-direction: column-reverse;
+    gap: var(--space-sm);
+  }
+
+  .booking-actions .btn {
+    min-width: unset;
+    width: 100%;
+    justify-content: center;
+  }
 }

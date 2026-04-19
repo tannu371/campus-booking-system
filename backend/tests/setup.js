@@ -1,17 +1,14 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { connectTestDatabase, disconnectTestDatabase } = require('./helpers/testDb');
 
-let mongoServer;
+let dbContext;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  dbContext = await connectTestDatabase();
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
+  await disconnectTestDatabase(dbContext);
 });
 
 afterEach(async () => {

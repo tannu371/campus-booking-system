@@ -10,11 +10,15 @@ const {
   updateBookingStatus,
   adminOverrideBooking,
   checkInBooking,
-  getBookingStats
+  getBookingStats,
+  createRecurringBooking,
+  cancelRecurringBooking
 } = require('../controllers/bookingController');
 const { protect, admin } = require('../middleware/auth');
 
 router.post('/', protect, createBooking);
+router.post('/recurring', protect, createRecurringBooking);
+router.delete('/recurring/:groupId', protect, cancelRecurringBooking);
 router.get('/mine', protect, getMyBookings);
 router.get('/stats', protect, admin, getBookingStats);
 router.get('/room/:roomId', getBookingsByRoom);

@@ -3,10 +3,9 @@
  * Suspend, activate, role changes (admin-only)
  */
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { connectTestDatabase, disconnectTestDatabase } = require('../helpers/testDb');
 
-let mongoServer, app;
+let dbContext, app;
 const User = require('../../models/User');
 const jwt = require('jsonwebtoken');
 
@@ -14,8 +13,7 @@ const JWT_SECRET = 'test_jwt_secret';
 const getToken = (userId) => jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '1d' });
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  dbContext = await connectTestDatabase();
   process.env.JWT_SECRET = JWT_SECRET;
 
   const express = require('express');
@@ -25,9 +23,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
+  await disconnectTestDatabase(dbContext);
 });
 
 describe('User Management API', () => {

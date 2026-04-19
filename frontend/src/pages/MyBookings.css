@@ -1,3 +1,53 @@
+/* ═══════ My Bookings Header ═══════ */
+.my-bookings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+/* ═══════ Filter Tabs ═══════ */
+.my-bookings-filters {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  overflow-x: auto;
+  padding-bottom: var(--space-xs);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.my-bookings-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.my-bookings-filters .btn {
+  flex-shrink: 0;
+}
+
+/* ═══════ Booking Cards ═══════ */
+.booking-card {
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+}
+
+.booking-card-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-lg);
+}
+
+.booking-card-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  align-items: flex-start;
+}
+
+/* ═══════ Legacy Classes ═══════ */
 .bookings-filters {
   display: flex;
   gap: var(--space-sm);
@@ -106,7 +156,39 @@
   color: var(--text-secondary);
 }
 
+/* ═══════ Responsive ═══════ */
 @media (max-width: 768px) {
+  .my-bookings-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .my-bookings-header .btn {
+    align-self: flex-start;
+  }
+
+  .my-bookings-filters {
+    gap: var(--space-xs);
+  }
+
+  .booking-card {
+    padding: var(--space-md);
+  }
+
+  .booking-card-inner {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .booking-card-actions {
+    width: 100%;
+  }
+
+  .booking-card-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
   .booking-item-main {
     flex-direction: column;
     align-items: flex-start;
@@ -122,5 +204,16 @@
 
   .booking-item-actions .btn {
     flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-card-actions {
+    flex-direction: column;
+  }
+
+  .my-bookings-filters .btn {
+    padding: 6px 12px !important;
+    font-size: 0.78rem !important;
   }
 }

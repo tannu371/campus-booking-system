@@ -8,7 +8,8 @@ A production-grade web application for booking campus facilities — classrooms,
 - 🔍 Smart room search with type, building, and capacity filters
 - 📅 Interactive FullCalendar view for real-time room availability
 - 📝 Book rooms with attendee count and purpose tracking
-- ✔️ Check-in system for approved bookings
+- ⏳ Approval-aware booking flow: request-only rooms create `pending` bookings
+- ✔️ Check-in system for approved bookings (only allowed during the booked time slot)
 - 🔖 Unique confirmation codes for every booking
 - ✏️ Cancel bookings with reason tracking
 - 🔐 Account suspension awareness (login blocked when suspended)
@@ -23,6 +24,7 @@ A production-grade web application for booking campus facilities — classrooms,
 
 ### System Integrity
 - ⚡ Atomic conflict detection with configurable buffer times between bookings
+- 🔁 Approval-room conflict policy: multiple `pending` requests can coexist; only `approved` blocks slot
 - 🛡️ Booking validation: time order, duration limits, operating hours, capacity, advance window
 - 📝 Non-blocking audit logging for every system action (19 action types)
 - 🔄 Alternative room suggestions when a conflict is detected
@@ -35,7 +37,7 @@ A production-grade web application for booking campus facilities — classrooms,
 | Frontend | React 18 (Vite) |
 | Styling | Vanilla CSS (glassmorphism, dark theme, animations) |
 | Backend | Node.js + Express.js |
-| Database | MongoDB + Mongoose (with `mongodb-memory-server` fallback) |
+| Database | MongoDB + Mongoose |
 | Auth | JWT + bcrypt |
 | Calendar | FullCalendar.js |
 | Email | Nodemailer (Gmail SMTP) |
@@ -57,7 +59,7 @@ campus-booking-system/
 │       ├── context/          # Auth, Theme, Toast providers
 │       └── services/         # Axios API client
 ├── backend/
-│   ├── config/               # DB connection (with memory-server fallback)
+│   ├── config/               # DB connection
 │   ├── middleware/            # JWT auth + admin guard
 │   ├── models/               # User, Room, Booking, AuditLog
 │   ├── controllers/          # auth, booking, room, user, audit
@@ -72,7 +74,55 @@ campus-booking-system/
 
 ### Prerequisites
 - Node.js (v18+)
-- MongoDB (optional — app falls back to in-memory MongoDB automatically)
+- MongoDB (required for persistent data)
+
+#### MongoDB (macOS / Homebrew)
+
+If `npm run dev` shows `ECONNREFUSED 127.0.0.1:27017`, MongoDB isn’t running yet.
+
+Install + start MongoDB with Homebrew:
+
+```bash
+brew tap mongodb/brew
+brew install mongodb-community@7.0
+brew services start mongodb-community@7.0
+```
+
+Quick verify:
+
+```bash
+nc -z 127.0.0.1 27017 && echo "mongo up"
+```
+
+#### MongoDB (Windows)
+
+If `npm run dev` shows `ECONNREFUSED 127.0.0.1:27017`, MongoDB isn’t running yet.
+
+Option A (recommended): install MongoDB Community Server and run it as a Windows Service.
+
+- Download “MongoDB Community Server” from the official MongoDB website and install it.
+- During installation, select **“Install MongoDB as a Service”**.
+- After install, ensure the service is running:
+
+```powershell
+Get-Service MongoDB
+Start-Service MongoDB
+```
+
+Quick verify (PowerShell):
+
+```powershell
+Test-NetConnection 127.0.0.1 -Port 27017
+```
+
+Option B (if you use winget): install via Windows Package Manager (package name can vary by machine):
+
+```powershell
+winget search mongodb
+winget install MongoDB.Server
+```
+
+Then start the MongoDB service as above.
 
 ### Setup
 
@@ -88,7 +138,22 @@ campus-booking-system/
    npm install
    npm run dev
    ```
-   The server starts on port **5001** and auto-seeds with sample data if the database is empty.
+   The server starts on port **5001**.
+
+   #### Seed accounts + persistence
+   - **Seed login accounts** (admin/faculty/student/staff) exist only after the database is seeded.
+   - If you want seed accounts to appear automatically on a fresh database, set:
+     - `AUTO_SEED_ON_EMPTY=true` (seeds **only when the DB is empty**)
+   - To keep data created from the frontend **persistent**, run a real MongoDB and keep:
+     - `ALLOW_IN_MEMORY_DB=false`
+   - If you don’t want to install MongoDB (demo-only), you can use an ephemeral in-memory DB:
+     - set `ALLOW_IN_MEMORY_DB=true` (data will reset on restart)
+
+   If you ever want to reset back to seed data (this clears the DB), run:
+
+   ```bash
+   npm run seed
+   ```
 
 3. **Frontend setup**
    ```bash
@@ -100,6 +165,8 @@ campus-booking-system/
 4. Open `http://localhost:5173` in your browser.
 
 ### Login Credentials
+
+These accounts are available **after seeding** (either auto-seed on empty DB, or `npm run seed`):
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -142,6 +209,12 @@ campus-booking-system/
 | PUT | `/api/bookings/:id/checkin` | Check in |
 | POST | `/api/bookings/override` | Admin override |
 | DELETE | `/api/bookings/:id` | Cancel booking |
+
+### Check-in Policy
+
+- **Who can check in**: the booking owner (or an admin)
+- **Allowed only if**: booking status is `approved`
+- **Time window**: check-in is allowed **only during the booked time slot** (not before start, not after end)
 
 ### Users (Admin)
 | Method | Endpoint | Description |
@@ -192,6 +265,19 @@ npm run test:edge      # Edge case tests (15 tests, ~3s)
 npm run test:coverage  # Full run with Istanbul coverage report
 ```
 
+### Integration DB Fallback
+
+Integration tests first try `mongodb-memory-server`. If that fails on your machine, tests now fall back to:
+
+- `TEST_MONGO_URI` (if provided), or
+- `mongodb://localhost:27017/campus-booking-test`
+
+Example:
+
+```bash
+TEST_MONGO_URI="mongodb://localhost:27017/campus-booking-test" npm run test:integration
+```
+
 ### Coverage Highlights
 
 | Module | Statements | Branches | Functions | Lines |
@@ -199,6 +285,16 @@ npm run test:coverage  # Full run with Istanbul coverage report
 | `bookingValidator.js` | 98.9% | 91.5% | 100% | 100% |
 | `auth.js` (middleware) | 100% | 83.3% | 100% | 100% |
 | `emailTemplates.js` | 93.8% | 66.7% | 66.7% | 100% |
+
+## ⚙️ Runtime Configuration
+
+Backend environment flags in `backend/.env`:
+
+- `MONGO_URI` — persistent MongoDB connection string
+- `AUTO_SEED_ON_EMPTY=false` — keep `false` for normal usage; set `true` only for demo bootstrap
+- `ALLOW_IN_MEMORY_DB=false` — keep `false` for persistence; set `true` only for ephemeral demo/testing
+
+If `ALLOW_IN_MEMORY_DB` is enabled, data is not persistent across restarts.
 
 ## 📄 License
 

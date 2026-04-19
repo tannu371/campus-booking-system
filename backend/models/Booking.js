@@ -34,7 +34,7 @@ const bookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'cancelled', 'completed', 'no_show'],
+    enum: ['pending', 'approved', 'rejected', 'cancelled', 'completed', 'no_show', 'auto_released'],
     default: 'approved'
   },
   attendeeCount: {
@@ -57,12 +57,20 @@ const bookingSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
+  cancelledAt: {
+    type: Date,
+    default: null
+  },
   checkedIn: {
     type: Boolean,
     default: false
   },
   checkInTime: {
     type: Date,
+    default: null
+  },
+  checkInCode: {
+    type: String,
     default: null
   },
   adminOverride: {
@@ -73,6 +81,33 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: ''
+  },
+  priorityLevel: {
+    type: Number,
+    min: 1,
+    max: 5,
+    default: 4
+  },
+  autoReleaseAt: {
+    type: Date,
+    default: null
+  },
+  // Recurring booking fields
+  recurrenceRule: {
+    type: String,
+    default: null
+  },
+  recurrenceGroupId: {
+    type: String,
+    default: null
+  },
+  recurrenceIndex: {
+    type: Number,
+    default: null
+  },
+  isRecurringParent: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -82,5 +117,7 @@ const bookingSchema = new mongoose.Schema({
 bookingSchema.index({ room: 1, date: 1, status: 1 });
 bookingSchema.index({ user: 1, status: 1 });
 bookingSchema.index({ status: 1, date: 1 });
+bookingSchema.index({ autoReleaseAt: 1, status: 1, checkedIn: 1 });
+bookingSchema.index({ recurrenceGroupId: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

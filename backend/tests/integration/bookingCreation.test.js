@@ -4,9 +4,9 @@
  */
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { connectTestDatabase, disconnectTestDatabase } = require('../helpers/testDb');
 
-let mongoServer, app, server;
+let dbContext, app;
 const Room = require('../../models/Room');
 const User = require('../../models/User');
 const Booking = require('../../models/Booking');
@@ -17,8 +17,7 @@ const JWT_SECRET = 'test_jwt_secret';
 const getToken = (userId) => jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '1d' });
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  dbContext = await connectTestDatabase();
   process.env.JWT_SECRET = JWT_SECRET;
 
   // Create express app without starting server
@@ -31,9 +30,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
+  await disconnectTestDatabase(dbContext);
 });
 
 afterEach(async () => {
@@ -227,6 +224,70 @@ describe('POST /api/bookings — Booking Creation', () => {
           date: tomorrow(), startTime: '09:00', endTime: '11:00'
         });
       expect(res.status).toBe(409);
+    });
+
+    test('12.9: PENDING booking should NOT block approval-required room', async () => {
+      await Booking.create({
+        room: approvalRoom._id,
+        user: student._id,
+        title: 'Existing Pending Request',
+        date: tomorrow(),
+        startTime: '09:00',
+        endTime: '11:00',
+        status: 'pending',
+        confirmationCode: `BK-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      });
+
+      const res = await request(app)
+        .post('/api/bookings')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({
+          room: approvalRoom._id,
+          title: 'Second Pending Request',
+          date: tomorrow(),
+          startTime: '09:00',
+          endTime: '11:00'
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('pending');
+    });
+  });
+
+  describe('Recurring Booking Conflict Detection', () => {
+    beforeEach(async () => {
+      await Booking.create({
+        room: room._id,
+        user: student._id,
+        title: 'Existing Weekly Class',
+        date: tomorrow(),
+        startTime: '10:00',
+        endTime: '11:00',
+        status: 'approved',
+        confirmationCode: `BK-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      });
+    });
+
+    test('Should reject recurring booking when any occurrence conflicts', async () => {
+      const res = await request(app)
+        .post('/api/bookings/recurring')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({
+          room: room._id,
+          title: 'Weekly Team Sync',
+          date: tomorrow(),
+          startTime: '10:30',
+          endTime: '11:30',
+          recurrenceRule: 'FREQ=DAILY;COUNT=3'
+        });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('RECURRING_BOOKING_CONFLICT');
+      expect(Array.isArray(res.body.conflict_occurrences)).toBe(true);
+      expect(res.body.conflict_occurrences.length).toBeGreaterThan(0);
+
+      const bookings = await Booking.find({ title: 'Weekly Team Sync' });
+      expect(bookings.length).toBe(0);
     });
   });
 

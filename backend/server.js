@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const { attachIp } = require('./utils/auditLogger');
+const { startAutoReleaseWorker } = require('./utils/autoReleaseWorker');
 
 dotenv.config();
 
@@ -11,18 +12,24 @@ const app = express();
 // Connect to MongoDB and auto-seed if empty
 const startDB = async () => {
   await connectDB();
-  // Auto-seed if database is empty (e.g. in-memory server)
-  const User = require('./models/User');
-  const userCount = await User.countDocuments();
-  if (userCount === 0) {
-    console.log('📦 Empty database detected. Auto-seeding...');
-    try {
-      await require('./seedData')();
-      console.log('✅ Auto-seed complete!');
-    } catch (err) {
-      console.error('⚠️ Auto-seed failed:', err.message);
+
+  const autoSeedOnEmpty = process.env.AUTO_SEED_ON_EMPTY === 'true';
+  if (autoSeedOnEmpty) {
+    const User = require('./models/User');
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      console.log('📦 Empty database detected. Auto-seeding...');
+      try {
+        await require('./seedData')();
+        console.log('✅ Auto-seed complete!');
+      } catch (err) {
+        console.error('⚠️ Auto-seed failed:', err.message);
+      }
     }
   }
+  
+  // Start auto-release worker after DB connection
+  startAutoReleaseWorker();
 };
 startDB();
 

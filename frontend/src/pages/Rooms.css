@@ -1,3 +1,24 @@
+/* ═══════ Filter Bar ═══════ */
+.rooms-filter-bar {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.rooms-search-input {
+  max-width: 260px;
+  min-width: 160px;
+  flex: 1;
+}
+
+.rooms-filter-select {
+  max-width: 180px;
+  min-width: 130px;
+}
+
+/* ═══════ Legacy ═══════ */
 .rooms-filters {
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
@@ -40,8 +61,35 @@
   color: var(--text-secondary);
 }
 
+/* ═══════ Responsive ═══════ */
 @media (max-width: 768px) {
+  .rooms-filter-bar {
+    gap: var(--space-xs);
+  }
+
+  /* Keep search + 2 selects on one row via flex */
+  .rooms-search-input {
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+
+  .rooms-filter-select {
+    max-width: calc(50% - 4px);
+    min-width: 0;
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 10px 12px;
+  }
+
   .filters-form {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .rooms-filter-select {
+    max-width: calc(50% - 2px);
+    font-size: 0.8rem;
+    padding: 8px 10px;
   }
 }

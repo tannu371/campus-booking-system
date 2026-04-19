@@ -3,10 +3,9 @@
  * Based on testing.md §4.3 — Tests 17.1, 17.3, 17.5
  */
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { connectTestDatabase, disconnectTestDatabase } = require('../helpers/testDb');
 
-let mongoServer, app;
+let dbContext, app;
 const Room = require('../../models/Room');
 const User = require('../../models/User');
 const Booking = require('../../models/Booking');
@@ -16,8 +15,7 @@ const JWT_SECRET = 'test_jwt_secret';
 const getToken = (userId) => jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '1d' });
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  dbContext = await connectTestDatabase();
   process.env.JWT_SECRET = JWT_SECRET;
 
   const express = require('express');
@@ -27,9 +25,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
+  await disconnectTestDatabase(dbContext);
 });
 
 describe('PUT /api/bookings/:id/checkin — Check-In', () => {
@@ -55,10 +51,13 @@ describe('PUT /api/bookings/:id/checkin — Check-In', () => {
   });
 
   test('17.1: Valid check-in for today\'s approved booking', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.max(0, now.getMinutes() - 1)).padStart(2, '0')}`;
+    const endTime = `${String((now.getHours() + 1) % 24).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const booking = await Booking.create({
       room: room._id, user: userA._id, title: 'Today Meeting',
-      date: today, startTime: '09:00', endTime: '11:00',
+      date: today, startTime, endTime,
       status: 'approved', confirmationCode: 'BK-2026-CK01'
     });
 
@@ -74,8 +73,7 @@ describe('PUT /api/bookings/:id/checkin — Check-In', () => {
   });
 
   test('17.3: Check-in for future booking succeeds (no time guard in current impl)', async () => {
-    // NOTE: testing.md says check-in for future bookings should fail.
-    // Current implementation allows check-in regardless of date.
+    // Future booking should fail (cannot check in before start time).
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 3);
     const booking = await Booking.create({
@@ -89,7 +87,7 @@ describe('PUT /api/bookings/:id/checkin — Check-In', () => {
       .put(`/api/bookings/${booking._id}/checkin`)
       .set('Authorization', `Bearer ${tokenA}`);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
   });
 
   test('17.5: Another user cannot check in to someone else\'s booking', async () => {

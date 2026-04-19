@@ -5,21 +5,71 @@ const { sendEmail } = require('../config/mailer');
 const { bookingConfirmationEmail, bookingStatusEmail } = require('../utils/emailTemplates');
 const { validateBookingRequest, detectsOverlapWithBuffer, generateConfirmationCode } = require('../utils/bookingValidator');
 const { logAudit } = require('../utils/auditLogger');
+const lockManager = require('../utils/lockManager');
+const IntervalTree = require('../utils/IntervalTree');
+const { calculatePriority, determineInitialStatus } = require('../utils/priorityCalculator');
+const { expandRecurrenceRule, validateRecurrenceRule, generateRecurrenceGroupId } = require('../utils/recurrenceEngine');
+const { calculateAutoReleaseTime } = require('../utils/autoReleaseWorker');
 
-// @desc    Create a booking
+// In-memory interval tree cache: Map<roomId_date, IntervalTree>
+const intervalTreeCache = new Map();
+
+const normalizeDateToStartOfDay = (dateValue) => {
+  let date;
+
+  // Parse YYYY-MM-DD as local date to avoid timezone shifts.
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    const [year, month, day] = dateValue.split('-').map(Number);
+    date = new Date(year, month - 1, day);
+  } else {
+    date = new Date(dateValue);
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const getDateRangeForDay = (dateValue) => {
+  const start = normalizeDateToStartOfDay(dateValue);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+};
+
+const getStatusesThatBlockSlot = (requiresApproval) =>
+  requiresApproval ? ['approved'] : ['pending', 'approved'];
+
+const formatConflictDate = (dateValue) =>
+  new Date(dateValue).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+// @desc    Create a booking (Enhanced 8-step algorithm)
 // @route   POST /api/bookings
 const createBooking = async (req, res) => {
+  let lock = null;
+  
   try {
     const { room, title, date, startTime, endTime, purpose, attendeeCount } = req.body;
 
-    // 1. Check user status
+    // STEP 1: Input Validation
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Not authorized. Please log in again.' });
+    }
+
     const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(401).json({ message: 'User account not found. Please log in again.' });
+    }
+
     const canBook = user.canBook();
     if (!canBook.allowed) {
       return res.status(403).json({ message: `Cannot create booking: ${canBook.reason}`, error: canBook });
     }
 
-    // 2. Check user booking limits
     const activeBookings = await Booking.countDocuments({
       user: req.user._id,
       status: { $in: ['pending', 'approved'] },
@@ -35,7 +85,7 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // 3. Get room and validate
+    // STEP 2: Authorization Check
     const roomDoc = await Room.findById(room);
     if (!roomDoc) {
       return res.status(404).json({ message: 'Room not found' });
@@ -44,39 +94,53 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ message: 'Room is not available for booking', error: 'ROOM_NOT_AVAILABLE' });
     }
 
-    // 4. Run all validations
+    // STEP 3: Buffer Application & Validation
     const validation = validateBookingRequest({ startTime, endTime, date, attendeeCount }, roomDoc);
     if (!validation.valid) {
       return res.status(400).json({ message: 'Validation failed', errors: validation.errors });
     }
 
-    // 5. Check for conflicts (including buffer time)
-    const bookingDate = new Date(date);
+    const bookingDate = normalizeDateToStartOfDay(date);
+    const { start: dayStart, end: dayEnd } = getDateRangeForDay(date);
+    const dateKey = bookingDate.toISOString().split('T')[0];
+    const lockKey = `lock:${room}:${dateKey}`;
+    const requestId = `${req.user._id}-${Date.now()}`;
+
+    // STEP 4: Acquire Lock
+    lock = await lockManager.tryAcquireLock(lockKey, requestId, 5000, 3, 50);
+    if (!lock) {
+      return res.status(503).json({
+        message: 'Unable to acquire booking lock. Please try again.',
+        error: 'LOCK_ACQUISITION_FAILED'
+      });
+    }
+
+    // STEP 5: Conflict Detection (Interval Tree + DB)
+    // Always do DB check for safety (interval tree is an optimization for future)
+    const statusesToBlock = getStatusesThatBlockSlot(roomDoc.requiresApproval);
     const existingBookings = await Booking.find({
       room,
-      date: bookingDate,
-      status: { $in: ['pending', 'approved'] }
+      date: { $gte: dayStart, $lt: dayEnd },
+      status: { $in: statusesToBlock }
     });
 
     const conflicts = existingBookings.filter(existing =>
       detectsOverlapWithBuffer(existing.startTime, existing.endTime, startTime, endTime, roomDoc.bufferMinutes || 0)
     );
-
+    
     if (conflicts.length > 0) {
+      lockManager.releaseLock(lock);
+      
       // Find alternative rooms
-      const alternativeRooms = await Room.find({
-        _id: { $ne: room },
-        isAvailable: true,
-        isActive: true,
-        capacity: { $gte: attendeeCount || 1 }
-      }).limit(3).select('name building floor capacity type');
+      const alternativeRooms = await findAlternativeRooms(room, attendeeCount, roomDoc.type, date, startTime, endTime);
 
       return res.status(409).json({
-        message: 'Time slot conflicts with an existing booking',
+        message: `This room is already booked on ${formatConflictDate(bookingDate)} between ${startTime} and ${endTime}. Please select a different time.`,
         error: 'BOOKING_CONFLICT',
         conflicting_bookings: conflicts.map(c => ({
           id: c._id,
           title: c.title,
+          date: c.date,
           startTime: c.startTime,
           endTime: c.endTime,
           status: c.status
@@ -86,11 +150,14 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // 6. Determine initial status
-    const initialStatus = roomDoc.requiresApproval ? 'pending' : 'approved';
+    // STEP 6: Atomic Insert with Conflict Guard
+    const initialStatus = determineInitialStatus(user, roomDoc);
     const confirmationCode = generateConfirmationCode();
+    const priorityLevel = calculatePriority(user.role);
+    const autoReleaseAt = initialStatus === 'approved' 
+      ? calculateAutoReleaseTime(bookingDate, startTime, 15)
+      : null;
 
-    // 7. Create the booking
     const booking = await Booking.create({
       room,
       user: req.user._id,
@@ -101,12 +168,27 @@ const createBooking = async (req, res) => {
       purpose,
       attendeeCount: attendeeCount || null,
       status: initialStatus,
-      confirmationCode
+      confirmationCode,
+      priorityLevel,
+      autoReleaseAt
     });
+
+    // STEP 7: Release Lock & Post-Processing
+    // Update interval tree cache (optional optimization for future)
+    const cacheKey = `${room}_${dateKey}`;
+    let tree = intervalTreeCache.get(cacheKey);
+    if (!tree) {
+      tree = new IntervalTree();
+      intervalTreeCache.set(cacheKey, tree);
+    }
+    tree.insert(startTime, endTime, booking._id.toString());
+    
+    lockManager.releaseLock(lock);
+    lock = null;
 
     const populated = await booking.populate(['room', 'user']);
 
-    // 8. Audit log
+    // STEP 8: Audit & Notifications
     await logAudit('BOOKING_CREATED', {
       performedBy: req.user._id,
       targetType: 'booking',
@@ -117,12 +199,13 @@ const createBooking = async (req, res) => {
         startTime,
         endTime,
         status: initialStatus,
-        confirmationCode
+        confirmationCode,
+        priorityLevel,
+        autoReleaseAt
       },
       ipAddress: req.clientIp
     });
 
-    // 9. Send confirmation email (non-blocking)
     sendEmail(
       req.user.email,
       initialStatus === 'pending'
@@ -133,6 +216,10 @@ const createBooking = async (req, res) => {
 
     res.status(201).json(populated);
   } catch (error) {
+    // Ensure lock is released on error
+    if (lock) {
+      lockManager.releaseLock(lock);
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -288,12 +375,43 @@ const updateBookingStatus = async (req, res) => {
   try {
     const { status, reason } = req.body;
 
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate('room');
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
     const previousStatus = booking.status;
+
+    // If approving, ensure no approved booking conflicts in same slot
+    if (status === 'approved' && previousStatus !== 'approved') {
+      const roomDoc = booking.room;
+      const { start: dayStart, end: dayEnd } = getDateRangeForDay(booking.date);
+
+      const approvedSameDay = await Booking.find({
+        _id: { $ne: booking._id },
+        room: roomDoc._id,
+        date: { $gte: dayStart, $lt: dayEnd },
+        status: 'approved'
+      }).select('startTime endTime');
+
+      const hasConflict = approvedSameDay.some(existing =>
+        detectsOverlapWithBuffer(
+          existing.startTime,
+          existing.endTime,
+          booking.startTime,
+          booking.endTime,
+          roomDoc.bufferMinutes || 0
+        )
+      );
+
+      if (hasConflict) {
+        return res.status(409).json({
+          message: 'Cannot approve booking: time slot conflicts with an already approved booking.',
+          error: 'APPROVAL_CONFLICT'
+        });
+      }
+    }
+
     booking.status = status;
     if (reason) booking.cancelReason = reason;
     await booking.save();
@@ -403,12 +521,12 @@ const adminOverrideBooking = async (req, res) => {
 // @route   PUT /api/bookings/:id/checkin
 const checkInBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate(['room', 'user']);
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    if (booking.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (booking.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -416,23 +534,334 @@ const checkInBooking = async (req, res) => {
       return res.status(400).json({ message: 'Only approved bookings can be checked in' });
     }
 
-    booking.checkedIn = true;
-    booking.checkInTime = new Date();
-    await booking.save();
+    // Check-in window validation (strict - only within the booked time window)
+    const now = new Date();
+    const startDateTime = new Date(booking.date);
+    const [startH, startM] = booking.startTime.split(':').map(Number);
+    startDateTime.setHours(startH, startM, 0, 0);
+
+    const endDateTime = new Date(booking.date);
+    const [endH, endM] = booking.endTime.split(':').map(Number);
+    endDateTime.setHours(endH, endM, 0, 0);
+
+    if (now < startDateTime) {
+      return res.status(400).json({
+        message: 'Check-in is only allowed during your booked time slot.',
+        error: 'CHECK_IN_TOO_EARLY',
+        startsAt: startDateTime
+      });
+    }
+
+    if (now > endDateTime) {
+      return res.status(400).json({
+        message: 'Check-in window has ended for this booking.',
+        error: 'CHECK_IN_TOO_LATE',
+        endsAt: endDateTime
+      });
+    }
+
+    // Atomic check-in to prevent race with auto-release
+    const updated = await Booking.findOneAndUpdate(
+      {
+        _id: booking._id,
+        status: 'approved',
+        checkedIn: false
+      },
+      {
+        $set: {
+          checkedIn: true,
+          checkInTime: now
+        }
+      },
+      { new: true }
+    ).populate(['room', 'user']);
+
+    if (!updated) {
+      // Check if already checked in (idempotent behavior)
+      if (booking.checkedIn) {
+        return res.json(booking); // Return existing booking, already checked in
+      }
+      
+      return res.status(400).json({
+        message: 'Booking status changed, cannot check in',
+        error: 'CHECK_IN_FAILED'
+      });
+    }
 
     await logAudit('BOOKING_CHECKED_IN', {
       performedBy: req.user._id,
       targetType: 'booking',
       targetId: booking._id,
-      details: { checkInTime: booking.checkInTime },
+      details: { checkInTime: now },
       ipAddress: req.clientIp
     });
 
-    const populated = await booking.populate(['room', 'user']);
-    res.json(populated);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// @desc    Create recurring booking
+// @route   POST /api/bookings/recurring
+const createRecurringBooking = async (req, res) => {
+  try {
+    const { room, title, date, startTime, endTime, purpose, attendeeCount, recurrenceRule } = req.body;
+
+    // Validate recurrence rule
+    const ruleValidation = validateRecurrenceRule(recurrenceRule);
+    if (!ruleValidation.valid) {
+      return res.status(400).json({
+        message: 'Invalid recurrence rule',
+        error: ruleValidation.error
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    const roomDoc = await Room.findById(room);
+    
+    if (!roomDoc) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    // Expand recurrence rule
+    const firstStart = new Date(date);
+    const [startH, startM] = startTime.split(':').map(Number);
+    const [endH, endM] = endTime.split(':').map(Number);
+    firstStart.setHours(startH, startM, 0, 0);
+    
+    const firstEnd = new Date(date);
+    firstEnd.setHours(endH, endM, 0, 0);
+
+    const occurrences = expandRecurrenceRule(recurrenceRule, firstStart, firstEnd);
+
+    if (occurrences.length === 0) {
+      return res.status(400).json({ message: 'No occurrences generated from recurrence rule' });
+    }
+
+    // Generate group ID
+    const groupId = generateRecurrenceGroupId();
+    const conflicts = [];
+    for (let i = 0; i < occurrences.length; i++) {
+      const occurrence = occurrences[i];
+      const occDate = normalizeDateToStartOfDay(occurrence.start);
+      const { start: occDayStart, end: occDayEnd } = getDateRangeForDay(occDate);
+
+      const statusesToBlock = getStatusesThatBlockSlot(roomDoc.requiresApproval);
+      const existingBookings = await Booking.find({
+        room,
+        date: { $gte: occDayStart, $lt: occDayEnd },
+        status: { $in: statusesToBlock }
+      });
+
+      const conflictingBookings = existingBookings.filter(existing =>
+        detectsOverlapWithBuffer(existing.startTime, existing.endTime, startTime, endTime, roomDoc.bufferMinutes || 0)
+      );
+
+      if (conflictingBookings.length > 0) {
+        conflicts.push({
+          index: i,
+          date: occDate,
+          requestedStartTime: startTime,
+          requestedEndTime: endTime,
+          conflictsWith: conflictingBookings.map(conflict => ({
+            id: conflict._id,
+            title: conflict.title,
+            date: conflict.date,
+            startTime: conflict.startTime,
+            endTime: conflict.endTime,
+            status: conflict.status
+          }))
+        });
+      }
+    }
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        message: `Recurring booking has conflicts on ${conflicts.length} occurrence(s). No bookings were created.`,
+        error: 'RECURRING_BOOKING_CONFLICT',
+        buffer_minutes: roomDoc.bufferMinutes || 0,
+        conflict_occurrences: conflicts.map(conflict => ({
+          index: conflict.index,
+          date: conflict.date,
+          dateLabel: formatConflictDate(conflict.date),
+          requestedStartTime: conflict.requestedStartTime,
+          requestedEndTime: conflict.requestedEndTime,
+          conflictsWith: conflict.conflictsWith
+        }))
+      });
+    }
+
+    const createdBookings = [];
+    for (let i = 0; i < occurrences.length; i++) {
+      const occurrence = occurrences[i];
+      const occDate = normalizeDateToStartOfDay(occurrence.start);
+      const initialStatus = determineInitialStatus(user, roomDoc);
+      const confirmationCode = generateConfirmationCode();
+      const priorityLevel = calculatePriority(user.role);
+      const autoReleaseAt = initialStatus === 'approved'
+        ? calculateAutoReleaseTime(occDate, startTime, 15)
+        : null;
+
+      const booking = await Booking.create({
+        room,
+        user: req.user._id,
+        title,
+        date: occDate,
+        startTime,
+        endTime,
+        purpose,
+        attendeeCount: attendeeCount || null,
+        status: initialStatus,
+        confirmationCode,
+        priorityLevel,
+        autoReleaseAt,
+        recurrenceRule,
+        recurrenceGroupId: groupId,
+        recurrenceIndex: i,
+        isRecurringParent: i === 0
+      });
+
+      createdBookings.push(booking);
+    }
+
+    await logAudit('RECURRING_BOOKING_CREATED', {
+      performedBy: req.user._id,
+      targetType: 'booking',
+      targetId: groupId,
+      details: {
+        room: roomDoc.name,
+        recurrenceRule,
+        totalOccurrences: occurrences.length,
+        created: createdBookings.length,
+        conflicts: 0
+      },
+      ipAddress: req.clientIp
+    });
+
+    res.status(201).json({
+      message: 'Recurring booking created',
+      groupId,
+      created: createdBookings.length,
+      conflicts: 0,
+      bookings: createdBookings
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Cancel recurring booking
+// @route   DELETE /api/bookings/recurring/:groupId
+const cancelRecurringBooking = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { scope = 'ALL', fromDate } = req.body; // Scope: THIS_ONLY, THIS_AND_FUTURE, ALL
+
+    const bookings = await Booking.find({
+      recurrenceGroupId: groupId,
+      status: { $in: ['pending', 'approved'] }
+    });
+
+    if (bookings.length === 0) {
+      return res.status(404).json({ message: 'No bookings found for this recurrence group' });
+    }
+
+    // Check authorization
+    const firstBooking = bookings[0];
+    if (firstBooking.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    let bookingsToCancel = [];
+
+    switch (scope) {
+      case 'THIS_ONLY':
+        if (!fromDate) {
+          return res.status(400).json({ message: 'fromDate required for THIS_ONLY scope' });
+        }
+        bookingsToCancel = bookings.filter(b => 
+          b.date.toISOString().split('T')[0] === new Date(fromDate).toISOString().split('T')[0]
+        );
+        break;
+
+      case 'THIS_AND_FUTURE':
+        if (!fromDate) {
+          return res.status(400).json({ message: 'fromDate required for THIS_AND_FUTURE scope' });
+        }
+        bookingsToCancel = bookings.filter(b => b.date >= new Date(fromDate));
+        break;
+
+      case 'ALL':
+      default:
+        bookingsToCancel = bookings;
+        break;
+    }
+
+    // Cancel bookings
+    const cancelledIds = [];
+    for (const booking of bookingsToCancel) {
+      booking.status = 'cancelled';
+      booking.cancelReason = `Recurring booking cancelled (${scope})`;
+      booking.cancelledBy = req.user._id;
+      booking.cancelledAt = new Date();
+      await booking.save();
+      cancelledIds.push(booking._id);
+    }
+
+    await logAudit('RECURRING_BOOKING_CANCELLED', {
+      performedBy: req.user._id,
+      targetType: 'booking',
+      targetId: groupId,
+      details: {
+        scope,
+        cancelled: cancelledIds.length,
+        fromDate
+      },
+      ipAddress: req.clientIp
+    });
+
+    res.json({
+      message: 'Recurring booking cancelled',
+      scope,
+      cancelled: cancelledIds.length
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Helper: Find alternative rooms
+const findAlternativeRooms = async (excludeRoomId, attendeeCount, roomType, date, startTime, endTime) => {
+  const { start: dayStart, end: dayEnd } = getDateRangeForDay(date);
+  const rooms = await Room.find({
+    _id: { $ne: excludeRoomId },
+    isAvailable: true,
+    isActive: true,
+    capacity: { $gte: attendeeCount || 1 },
+    type: roomType
+  }).limit(5).select('name building floor capacity type requiresApproval');
+
+  const alternatives = [];
+
+  for (const room of rooms) {
+    const statusesToBlock = getStatusesThatBlockSlot(room.requiresApproval);
+    const existingBookings = await Booking.find({
+      room: room._id,
+      date: { $gte: dayStart, $lt: dayEnd },
+      status: { $in: statusesToBlock }
+    });
+
+    const hasConflict = existingBookings.some(existing =>
+      detectsOverlapWithBuffer(existing.startTime, existing.endTime, startTime, endTime, room.bufferMinutes || 0)
+    );
+
+    if (!hasConflict) {
+      alternatives.push(room);
+    }
+  }
+
+  return alternatives.slice(0, 3);
 };
 
 // @desc    Get booking stats (admin)
@@ -542,5 +971,7 @@ module.exports = {
   updateBookingStatus,
   adminOverrideBooking,
   checkInBooking,
-  getBookingStats
+  getBookingStats,
+  createRecurringBooking,
+  cancelRecurringBooking
 };

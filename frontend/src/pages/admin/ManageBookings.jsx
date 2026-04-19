@@ -41,7 +41,12 @@ const ManageBookings = () => {
       showToast(`Booking ${status}`, 'success');
       fetchBookings();
     } catch (err) {
-      showToast('Failed to update', 'error');
+      const errData = err.response?.data;
+      if (err.response?.status === 409 && errData?.error === 'APPROVAL_CONFLICT') {
+        showToast('Already approved for that time slot', 'error');
+        return;
+      }
+      showToast(errData?.message || 'Failed to update', 'error');
     }
   };
 
@@ -116,12 +121,12 @@ const ManageBookings = () => {
                     <div className="table-actions">
                       {b.status === 'pending' && (
                         <>
-                          <button className="btn btn-success" style={{ fontSize: '0.75rem', padding: '4px 10px' }} onClick={() => handleStatusUpdate(b._id, 'approved')}>Approve</button>
-                          <button className="btn btn-danger" style={{ fontSize: '0.75rem', padding: '4px 10px' }} onClick={() => handleStatusUpdate(b._id, 'rejected', 'Rejected by admin')}>Reject</button>
+                          <button className="btn btn-success btn-sm" onClick={() => handleStatusUpdate(b._id, 'approved')}>Approve</button>
+                          <button className="btn btn-danger btn-sm" onClick={() => handleStatusUpdate(b._id, 'rejected', 'Rejected by admin')}>Reject</button>
                         </>
                       )}
                       {b.status === 'approved' && (
-                        <button className="btn btn-danger" style={{ fontSize: '0.75rem', padding: '4px 10px' }} onClick={() => handleStatusUpdate(b._id, 'cancelled', 'Cancelled by admin')}>Cancel</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleStatusUpdate(b._id, 'cancelled', 'Cancelled by admin')}>Cancel</button>
                       )}
                     </div>
                   </td>

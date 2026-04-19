@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
+import './BookingModal.css';
 
 const BookingModal = ({ room, selectedDate, selectedTime, onClose, onBooked }) => {
   const { showToast } = useToast();
@@ -14,6 +15,7 @@ const BookingModal = ({ room, selectedDate, selectedTime, onClose, onBooked }) =
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [conflict, setConflict] = useState(null);
 
   useEffect(() => {
     if (selectedDate) setForm(f => ({ ...f, date: selectedDate }));
@@ -54,11 +56,19 @@ const BookingModal = ({ room, selectedDate, selectedTime, onClose, onBooked }) =
     } catch (err) {
       const errData = err.response?.data;
       if (errData?.error === 'BOOKING_CONFLICT') {
-        showToast('Time slot conflicts with an existing booking', 'error');
+        setConflict({
+          message: errData.message,
+          conflictingBookings: errData.conflicting_bookings || [],
+          alternativeRooms: errData.alternative_rooms || [],
+          bufferMinutes: errData.buffer_minutes || 0
+        });
+        showToast(errData.message || 'Time slot conflicts with an existing booking', 'error');
+      } else if (err.response?.status === 401) {
+        showToast('Session expired. Please log in again.', 'error');
       } else if (errData?.errors) {
         showToast(errData.errors[0]?.message || 'Validation failed', 'error');
       } else {
-        showToast(errData?.message || 'Failed to create booking', 'error');
+        showToast(errData?.message || 'Failed to create booking. Please try another slot.', 'error');
       }
     } finally {
       setLoading(false);
@@ -103,6 +113,76 @@ const BookingModal = ({ room, selectedDate, selectedTime, onClose, onBooked }) =
     );
   }
 
+  if (conflict) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚠️</div>
+            <h2 style={{ marginBottom: 8 }}>Booking Conflict</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+              {conflict.message}
+            </p>
+            
+            {conflict.conflictingBookings.length > 0 && (
+              <div style={{ 
+                background: 'rgba(239,68,68,0.1)', 
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px',
+                marginBottom: 16,
+                textAlign: 'left'
+              }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 8 }}>
+                  Conflicting Bookings:
+                </div>
+                {conflict.conflictingBookings.map((cb, i) => (
+                  <div key={i} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    • {cb.title} ({cb.startTime} - {cb.endTime})
+                  </div>
+                ))}
+                {conflict.bufferMinutes > 0 && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                    Note: {conflict.bufferMinutes} minute buffer time applied
+                  </div>
+                )}
+              </div>
+            )}
+
+            {conflict.alternativeRooms && conflict.alternativeRooms.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
+                  Alternative Rooms Available:
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {conflict.alternativeRooms.map((alt) => (
+                    <a
+                      key={alt._id}
+                      href={`/rooms/${alt._id}`}
+                      className="btn btn-secondary"
+                      style={{ textDecoration: 'none', fontSize: '0.85rem' }}
+                    >
+                      {alt.name} - {alt.building}, Floor {alt.floor} (Capacity: {alt.capacity})
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button className="btn btn-secondary" onClick={() => setConflict(null)}>
+                Try Different Time
+              </button>
+              <button className="btn btn-ghost" onClick={onClose}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
@@ -121,7 +201,7 @@ const BookingModal = ({ room, selectedDate, selectedTime, onClose, onBooked }) =
             <label className="form-label">Title *</label>
             <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required placeholder="e.g. Study Group, Workshop..." />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <div className="booking-datetime-grid">
             <div className="form-group">
               <label className="form-label">Date *</label>
               <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required min={new Date().toISOString().split('T')[0]} />
@@ -143,7 +223,7 @@ const BookingModal = ({ room, selectedDate, selectedTime, onClose, onBooked }) =
             <label className="form-label">Purpose</label>
             <textarea className="form-textarea" value={form.purpose} onChange={e => setForm({ ...form, purpose: e.target.value })} rows="2" placeholder="Brief description..."></textarea>
           </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+          <div className="booking-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Booking...' : room.requiresApproval ? 'Submit for Approval' : 'Confirm Booking'}

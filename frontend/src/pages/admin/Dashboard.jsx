@@ -131,7 +131,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-lg)' }}>
+          <div className="dashboard-bottom-grid">
             {/* Bookings by Room */}
             {stats.bookingsPerRoom && stats.bookingsPerRoom.length > 0 && (
               <div className="admin-section">

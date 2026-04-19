@@ -150,7 +150,7 @@ const ManageUsers = () => {
           <option value="suspended">Suspended</option>
           <option value="deactivated">Deactivated</option>
         </select>
-        <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px' }}>Search</button>
+        <button type="submit" className="btn btn-primary btn-sm">Search</button>
       </form>
 
       {/* Users Table */}
@@ -195,7 +195,7 @@ const ManageUsers = () => {
                     {u.role !== 'admin' && (
                       <select
                         className="form-select"
-                        style={{ fontSize: '0.75rem', padding: '4px 6px', maxWidth: 100 }}
+                        style={{ fontSize: '0.8rem', padding: '6px 8px', maxWidth: 110 }}
                         value={u.role}
                         onChange={(e) => handleRoleChange(u._id, e.target.value)}
                       >
@@ -207,8 +207,7 @@ const ManageUsers = () => {
                     )}
                     {u.status === 'active' && u._id !== user._id && (
                       <button
-                        className="btn btn-danger"
-                        style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                        className="btn btn-danger btn-sm"
                         onClick={() => setSelectedUser(u)}
                       >
                         Suspend
@@ -216,8 +215,7 @@ const ManageUsers = () => {
                     )}
                     {u.status === 'suspended' && (
                       <button
-                        className="btn btn-success"
-                        style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                        className="btn btn-success btn-sm"
                         onClick={() => handleStatusChange(u._id, 'active')}
                       >
                         Activate
@@ -258,7 +256,7 @@ const ManageUsers = () => {
                 placeholder="Enter reason..."
               ></textarea>
             </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+            <div className="booking-actions">
               <button className="btn btn-secondary" onClick={() => setSelectedUser(null)}>Cancel</button>
               <button className="btn btn-danger" onClick={() => handleStatusChange(selectedUser._id, 'suspended', suspendReason)}>
                 Confirm Suspension

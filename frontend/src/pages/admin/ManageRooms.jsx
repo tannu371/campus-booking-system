@@ -105,7 +105,7 @@ const ManageRooms = () => {
 
   return (
     <AdminLayout>
-      <div className="admin-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="admin-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-md)' }}>
         <div>
           <h1>Manage Rooms</h1>
           <p>{rooms.length} rooms configured</p>
@@ -179,7 +179,7 @@ const ManageRooms = () => {
                   </label>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+              <div className="booking-actions">
                 <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
                 <button type="submit" className="btn btn-primary">{editRoom ? 'Update' : 'Create'} Room</button>
               </div>
@@ -219,8 +219,8 @@ const ManageRooms = () => {
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <div className="table-actions">
-                      <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '4px 10px' }} onClick={() => handleEdit(room)}>Edit</button>
-                      <button className="btn btn-danger" style={{ fontSize: '0.75rem', padding: '4px 10px' }} onClick={() => handleDelete(room._id)}>Deactivate</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(room)}>Edit</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(room._id)}>Deactivate</button>
                     </div>
                   </td>
                 </tr>

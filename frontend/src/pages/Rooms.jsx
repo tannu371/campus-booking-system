@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import RoomCard from '../components/RoomCard';
+import './Rooms.css';
 
 const Rooms = () => {
   const [rooms, setRooms] = useState([]);
@@ -44,23 +45,22 @@ const Rooms = () => {
   }, [search, typeFilter, buildingFilter]);
 
   return (
-    <div className="container" style={{ paddingTop: 32, paddingBottom: 40 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 4 }}>Browse Rooms</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Find and book the perfect space for your needs</p>
+    <div className="container" style={{ paddingTop: 20, paddingBottom: 32 }}>
+      <div style={{ marginBottom: 16 }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 2 }}>Browse Rooms</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Find and book the perfect space</p>
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div className="rooms-filter-bar">
         <input
           type="text"
-          className="form-input"
+          className="form-input rooms-search-input"
           placeholder="Search rooms..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: 280 }}
         />
-        <select className="form-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={{ maxWidth: 180 }}>
+        <select className="form-select rooms-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="">All Types</option>
           <option value="classroom">Classroom</option>
           <option value="seminar_hall">Seminar Hall</option>
@@ -68,12 +68,12 @@ const Rooms = () => {
           <option value="conference_room">Conference Room</option>
           <option value="lab">Lab</option>
         </select>
-        <select className="form-select" value={buildingFilter} onChange={(e) => setBuildingFilter(e.target.value)} style={{ maxWidth: 200 }}>
+        <select className="form-select rooms-filter-select" value={buildingFilter} onChange={(e) => setBuildingFilter(e.target.value)}>
           <option value="">All Buildings</option>
           {buildings.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
         {(search || typeFilter || buildingFilter) && (
-          <button className="btn btn-secondary" style={{ fontSize: '0.82rem', padding: '6px 12px' }}
+          <button className="btn btn-secondary btn-sm"
             onClick={() => { setSearch(''); setTypeFilter(''); setBuildingFilter(''); }}>
             Clear Filters
           </button>

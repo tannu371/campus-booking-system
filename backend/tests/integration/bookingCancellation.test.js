@@ -3,10 +3,9 @@
  * Based on testing.md §4.2 — Tests 15.1, 15.3-15.6
  */
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { connectTestDatabase, disconnectTestDatabase } = require('../helpers/testDb');
 
-let mongoServer, app;
+let dbContext, app;
 const Room = require('../../models/Room');
 const User = require('../../models/User');
 const Booking = require('../../models/Booking');
@@ -21,8 +20,7 @@ const tomorrow = () => {
 };
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  dbContext = await connectTestDatabase();
   process.env.JWT_SECRET = JWT_SECRET;
 
   const express = require('express');
@@ -32,9 +30,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
+  await disconnectTestDatabase(dbContext);
 });
 
 describe('DELETE /api/bookings/:id — Cancellation', () => {
