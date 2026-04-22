@@ -1,7 +1,7 @@
 const Room = require('../models/Room');
 const Booking = require('../models/Booking');
 const { logAudit } = require('../utils/auditLogger');
-const { sanitizeString, sanitizeNumber } = require('../utils/sanitizeQuery');
+const { sanitizeString, sanitizeNumber, sanitizeRegexPattern } = require('../utils/sanitizeQuery');
 
 // @desc    Get all rooms - with NoSQL injection protection
 // @route   GET /api/rooms
@@ -17,14 +17,26 @@ const getRooms = async (req, res) => {
 
     if (type) filter.type = type;
     if (building) {
-      // Sanitize regex input to prevent ReDoS
-      const sanitizedBuilding = building.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const sanitizedBuilding = sanitizeRegexPattern(building, { maxLength: 64 });
+      if (!sanitizedBuilding) {
+        return res.status(400).json({
+          message: 'Invalid building parameter',
+          error: 'INVALID_BUILDING_SEARCH',
+          hint: 'Use a plain text building value up to 64 characters'
+        });
+      }
       filter.building = { $regex: sanitizedBuilding, $options: 'i' };
     }
     if (capacity) filter.capacity = { $gte: capacity };
     if (search) {
-      // Sanitize regex input to prevent ReDoS
-      const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const sanitizedSearch = sanitizeRegexPattern(search, { maxLength: 64 });
+      if (!sanitizedSearch) {
+        return res.status(400).json({
+          message: 'Invalid search parameter',
+          error: 'INVALID_SEARCH',
+          hint: 'Use a plain text search value up to 64 characters'
+        });
+      }
       filter.$or = [
         { name: { $regex: sanitizedSearch, $options: 'i' } },
         { building: { $regex: sanitizedSearch, $options: 'i' } },

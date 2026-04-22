@@ -1,14 +1,42 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { sendEmail } = require('../config/mailer');
 const { welcomeEmail } = require('../utils/emailTemplates');
 const { logAudit } = require('../utils/auditLogger');
+const { isRevoked, revokeTokenString } = require('../utils/tokenRevocation');
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d'
+const generateAccessToken = (id) => {
+  return jwt.sign({ id, jti: crypto.randomUUID() }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '1h'
   });
 };
+
+const generateRefreshToken = (id) => {
+  return jwt.sign({ id, type: 'refresh', jti: crypto.randomUUID() }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+  });
+};
+
+const getRefreshCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/api/auth'
+  };
+};
+
+const buildUserPayload = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  department: user.department,
+  status: user.status
+});
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -34,15 +62,10 @@ const register = async (req, res) => {
     // Send welcome email (non-blocking)
     sendEmail(email, 'Welcome to CampusBook! 🏫', welcomeEmail(name)).catch(() => {});
 
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      department: user.department,
-      status: user.status,
-      token: generateToken(user._id)
-    });
+    const token = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+    res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
+    res.status(201).json({ ...buildUserPayload(user), token });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -92,15 +115,10 @@ const login = async (req, res) => {
         ipAddress: req.clientIp
       });
 
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        department: user.department,
-        status: user.status,
-        token: generateToken(user._id)
-      });
+      const token = generateAccessToken(user._id);
+      const refreshToken = generateRefreshToken(user._id);
+      res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
+      res.json({ ...buildUserPayload(user), token });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -109,10 +127,70 @@ const login = async (req, res) => {
   }
 };
 
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh
+const refresh = async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Not authorized, no refresh token' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ message: 'Not authorized, refresh token failed' });
+    }
+
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ message: 'Not authorized, invalid token type' });
+    }
+    if (await isRevoked(decoded.jti)) {
+      return res.status(401).json({ message: 'Not authorized, refresh token revoked' });
+    }
+
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized, user not found' });
+    }
+    if (user.status !== 'active') {
+      return res.status(401).json({ message: 'Not authorized, account is not active' });
+    }
+
+    const token = generateAccessToken(user._id);
+    const rotatedRefreshToken = generateRefreshToken(user._id);
+    await revokeTokenString(refreshToken);
+    res.cookie('refreshToken', rotatedRefreshToken, getRefreshCookieOptions());
+    res.json({ ...buildUserPayload(user), token });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+const logout = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const accessToken = authHeader.split(' ')[1];
+    await revokeTokenString(accessToken);
+  }
+
+  const refreshToken = req.cookies?.refreshToken;
+  if (refreshToken) {
+    await revokeTokenString(refreshToken);
+  }
+
+  const { httpOnly, secure, sameSite, path } = getRefreshCookieOptions();
+  res.clearCookie('refreshToken', { httpOnly, secure, sameSite, path });
+  res.status(200).json({ message: 'Logged out' });
+};
+
 // @desc    Get current user
 // @route   GET /api/auth/me
 const getMe = async (req, res) => {
   res.json(req.user);
 };
 
-module.exports = { register, login, getMe };
+module.exports = { register, login, refresh, logout, getMe };

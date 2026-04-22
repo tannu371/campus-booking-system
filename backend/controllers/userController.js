@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Booking = require('../models/Booking');
 const { logAudit } = require('../utils/auditLogger');
-const { sanitizeString, sanitizeNumber } = require('../utils/sanitizeQuery');
+const { sanitizeString, sanitizeNumber, sanitizeRegexPattern } = require('../utils/sanitizeQuery');
 
 // @desc    Get all users (admin) - with NoSQL injection protection
 // @route   GET /api/users
@@ -19,8 +19,15 @@ const getUsers = async (req, res) => {
     if (role) filter.role = role;
     if (status) filter.status = status;
     if (search) {
-      // Sanitize search string to prevent ReDoS attacks
-      const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const sanitizedSearch = sanitizeRegexPattern(search, { maxLength: 64 });
+      if (!sanitizedSearch) {
+        return res.status(400).json({
+          message: 'Invalid search parameter',
+          error: 'INVALID_SEARCH',
+          hint: 'Use a plain text search value up to 64 characters'
+        });
+      }
+
       filter.$or = [
         { name: { $regex: sanitizedSearch, $options: 'i' } },
         { email: { $regex: sanitizedSearch, $options: 'i' } },

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const { attachIp } = require('./utils/auditLogger');
 const { startAutoReleaseWorker } = require('./utils/autoReleaseWorker');
@@ -63,8 +64,19 @@ const startDB = async () => {
 startDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true
+}));
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; connect-src 'self' http://localhost:5001 http://localhost:5173; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  );
+  next();
+});
 app.use(express.json());
+app.use(cookieParser());
 app.use(attachIp);
 
 // Routes

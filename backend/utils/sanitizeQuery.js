@@ -168,6 +168,34 @@ const sanitizeDate = (value) => {
 };
 
 /**
+ * Escape regex metacharacters so user input is treated literally.
+ *
+ * @param {*} value - Raw user-provided value
+ * @param {Object} options - Validation options
+ * @param {number} options.maxLength - Maximum allowed length
+ * @returns {string|null} - Escaped regex-safe string or null if invalid
+ */
+const sanitizeRegexPattern = (value, options = {}) => {
+  const { maxLength = 64 } = options;
+  const sanitized = sanitizeString(value);
+
+  if (sanitized === null) {
+    return null;
+  }
+
+  const trimmed = sanitized.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.length > maxLength) {
+    return null;
+  }
+
+  return trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
  * Express middleware to sanitize all query parameters
  * Prevents NoSQL injection by rejecting object-type query params
  */
@@ -197,5 +225,6 @@ module.exports = {
   sanitizeObjectId,
   sanitizeNumber,
   sanitizeDate,
+  sanitizeRegexPattern,
   sanitizeQueryMiddleware
 };

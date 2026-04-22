@@ -62,7 +62,7 @@ campus-booking-system/
 ├── backend/
 │   ├── config/               # DB connection
 │   ├── middleware/            # JWT auth + admin guard
-│   ├── models/               # User, Room, Booking, AuditLog
+│   ├── models/               # User, Room, Booking, AuditLog, RevokedToken
 │   ├── controllers/          # auth, booking, room, user, audit
 │   ├── routes/               # auth, booking, room, user, audit
 │   ├── utils/                # bookingValidator, auditLogger, emailTemplates
@@ -151,7 +151,7 @@ Then start the MongoDB service as above.
    node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
    ```
    
-   Update `.env` with your generated JWT_SECRET. See [SECURITY.md](backend/SECURITY.md) for complete security configuration guide.
+   Update `.env` with your generated JWT_SECRET.
 
    Start the server:
    ```bash
@@ -194,7 +194,7 @@ These accounts are available **after seeding** (either auto-seed on empty DB, or
 | Student | `john@campus.edu` | Configured via `SEED_USER_PASSWORD` |
 | Staff | `carol@campus.edu` | Configured via `SEED_STAFF_PASSWORD` |
 
-**Note:** Default development passwords are set in `.env`. For production, see [SECURITY.md](backend/SECURITY.md).
+**Note:** Default development passwords are set in `.env`.
 
 ## 📡 API Endpoints
 
@@ -203,6 +203,8 @@ These accounts are available **after seeding** (either auto-seed on empty DB, or
 |--------|----------|-------------|
 | POST | `/api/auth/register` | Register new user |
 | POST | `/api/auth/login` | Login |
+| POST | `/api/auth/refresh` | Rotate refresh token + issue new access token |
+| POST | `/api/auth/logout` | Clear refresh cookie + end session |
 | GET | `/api/auth/me` | Get current user |
 
 ### Rooms
@@ -312,6 +314,8 @@ TEST_MONGO_URI="mongodb://localhost:27017/campus-booking-test" npm run test:inte
 Backend environment flags in `backend/.env`:
 
 - `MONGO_URI` — persistent MongoDB connection string
+- `JWT_ACCESS_EXPIRES_IN=1h` — access token lifetime (default: `1h`)
+- `JWT_REFRESH_EXPIRES_IN=7d` — refresh token lifetime (default: `7d`)
 - `AUTO_SEED_ON_EMPTY=false` — keep `false` for normal usage; set `true` only for demo bootstrap
 - `ALLOW_IN_MEMORY_DB=false` — keep `false` for persistence; set `true` only for ephemeral demo/testing
 
@@ -321,18 +325,34 @@ If `ALLOW_IN_MEMORY_DB` is enabled, data is not persistent across restarts.
 
 This application implements multiple security measures:
 
+- ✅ **Hardened JWT Session Model** - Short-lived access tokens (default 1h) with rotating refresh tokens (default 7d) in `httpOnly`, `Secure` (prod), `SameSite=Strict` cookies
+- ✅ **No localStorage Token Persistence** - Frontend keeps access token in memory only; session restore uses refresh cookie endpoint
+- ✅ **Token Revocation** - Every JWT carries `jti`; revoked token IDs are stored server-side and blocked in auth middleware
+- ✅ **Active-Status Enforcement** - Protected routes deny suspended/deactivated users even if their token is otherwise valid
 - ✅ **JWT Authentication** - Required JWT_SECRET, server fails at boot if not configured
 - ✅ **Password Hashing** - bcrypt with salt rounds
 - ✅ **Environment-based Secrets** - Seed passwords configurable via environment variables
 - ✅ **Role-based Access Control** - Admin, faculty, staff, and user roles with different permissions
 - ✅ **Audit Logging** - Complete action history for security monitoring
 - ✅ **Input Validation** - Request validation and sanitization
+- ✅ **Regex Search Hardening** - User search/building inputs are escaped and length-limited before `$regex` use to prevent ReDoS and broad wildcard scans
+- ✅ **CSP Header** - Content Security Policy header applied by backend to reduce XSS impact
 
-**Important:** See [SECURITY.md](backend/SECURITY.md) for:
-- JWT secret configuration requirements
-- Seed password security best practices
-- Production deployment checklist
-- Security incident response procedures
+### Security Hardening Details (Consolidated)
+
+Backend markdown documents were consolidated into this README:
+`backend/SECURITY.md`, `backend/SECURITY-SUMMARY.md`, `backend/SECURITY-FIXES-VERIFICATION.md`,
+`backend/CONCURRENCY.md`, `backend/MASS-ASSIGNMENT-FIX.md`, `backend/RECURRING-QUOTA-FIX.md`,
+and `backend/NOSQL-INJECTION-FIX.md`.
+
+- **JWT/session hardening**: no insecure JWT fallback, boot-time `JWT_SECRET` requirement, short-lived access token (default `1h`), rotating refresh token (default `7d`) in `httpOnly`, `Secure` (prod), `SameSite=Strict` cookie.
+- **Revocation + forced logout**: JWTs include `jti`, revoked token IDs are persisted in a revocation collection with TTL expiry, and `logout` revokes current access/refresh tokens.
+- **Runtime account checks**: protected endpoints require `user.status === 'active'`, so suspension/deactivation takes effect immediately.
+- **Seed safety**: all seed passwords come from `SEED_*_PASSWORD`; production blocks insecure auto-seed; no password logging.
+- **NoSQL/ReDoS mitigation**: primitive-only query sanitization, enum/objectId/number/date validation, and escaped + length-limited regex search inputs.
+- **Mass-assignment protection**: strict allowlists for room/booking create-update endpoints; protected fields rejected with explicit `PROTECTED_FIELDS` errors.
+- **Recurring quota enforcement**: recurring bookings validate role quota before creation and return `RECURRING_QUOTA_EXCEEDED` on overflow.
+- **Defense in depth**: CSP header, role-based access, audit logs, and secure operational defaults.
 
 ## 🏗️ Concurrency & Multi-Instance Safety
 
@@ -343,12 +363,11 @@ The booking system uses **MongoDB transactions and partial unique indexes** to p
 - ✅ **Transaction support** - MongoDB sessions ensure atomicity and isolation
 - ✅ **Graceful error handling** - Returns 409 with alternative rooms on concurrent conflicts
 
-**Important:** See [CONCURRENCY.md](backend/CONCURRENCY.md) for:
-- How multi-instance safety works
-- MongoDB replica set requirements
-- Load testing procedures
-- Performance considerations
-- Migration guide for existing deployments
+### Concurrency Notes
+
+- Correctness is enforced at the database layer (transactions + partial unique index), not by in-memory locks.
+- Unique index key: `{ room, date, startTime }` for active statuses to prevent duplicate active slot bookings.
+- Under contention, expected behavior is conflict responses (`409` / `E11000` handling) rather than silent double-booking.
 
 ## 📄 License
 
