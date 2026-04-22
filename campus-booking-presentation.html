@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Campus Room & Facility Booking System – Demo Presentation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #0D1117; color: #F0F0F0; overflow: hidden; }
+  .deck { height: 100vh; width: 100vw; position: relative; }
+  .slide { position: absolute; inset: 0; padding: 60px 80px; display: none; flex-direction: column; justify-content: center;
+    background: radial-gradient(1200px 700px at 20% 10%, rgba(243,156,18,0.15), transparent 60%),
+                radial-gradient(1000px 600px at 90% 90%, rgba(26,188,156,0.12), transparent 60%),
+                linear-gradient(135deg, #0D1117 0%, #161B22 100%);
+    animation: fade 0.35s ease; }
+  .slide.active { display: flex; }
+  @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  h1 { font-size: 52px; background: linear-gradient(90deg, #F39C12, #1ABC9C); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 18px; letter-spacing: -0.5px; font-weight: 800; }
+  h2 { font-size: 40px; margin-bottom: 24px; color: #F5B041; font-weight: 700; }
+  h3 { font-size: 22px; margin: 14px 0 8px; color: #48C9B0; font-weight: 600; }
+  p, li { font-size: 20px; line-height: 1.55; color: #E9ECEF; }
+  ul { padding-left: 24px; margin: 8px 0; } li { margin: 6px 0; }
+  .subtitle { font-size: 22px; color: #A0AEC0; margin-bottom: 20px; }
+  .meta { margin-top: 30px; font-size: 16px; color: #6B7C93; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .card { background: rgba(22, 27, 34, 0.85); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px 22px; backdrop-filter: blur(8px); transition: all 0.3s ease; }
+  .card:hover { border-color: rgba(243,156,18,0.3); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .tag { display: inline-block; background: rgba(243,156,18,0.15); color: #F5B041; padding: 4px 10px; border-radius: 999px; font-size: 14px; margin: 4px 6px 4px 0; border: 1px solid rgba(243,156,18,0.2); }
+  .stat { font-size: 44px; font-weight: 800; background: linear-gradient(135deg, #F39C12, #1ABC9C); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat-label { font-size: 15px; color: #6B7C93; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  code { background: rgba(0,0,0,0.5); color: #F5B041; padding: 2px 8px; border-radius: 6px; font-family: 'Fira Code', Consolas, monospace; font-size: 17px; border: 1px solid rgba(243,156,18,0.2); }
+  pre { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 18px; color: #E9ECEF; font-size: 16px; font-family: 'Fira Code', Consolas, monospace; overflow-x: auto; }
+  .nav { position: fixed; bottom: 18px; right: 24px; display: flex; gap: 10px; z-index: 10; }
+  .btn { background: rgba(243,156,18,0.12); color: #F5B041; border: 1px solid rgba(243,156,18,0.25); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 14px; user-select: none; font-weight: 600; transition: all 0.25s ease; }
+  .btn:hover { background: rgba(243,156,18,0.25); border-color: #F39C12; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(243,156,18,0.2); }
+  .counter { position: fixed; bottom: 22px; left: 28px; font-size: 14px; color: #6B7C93; z-index: 10; }
+  .bar { position: fixed; top: 0; left: 0; height: 4px; background: linear-gradient(90deg, #F39C12, #1ABC9C); transition: width 0.3s ease; z-index: 10; box-shadow: 0 0 15px rgba(243,156,18,0.4); }
+  .pill { display:inline-block; padding:4px 10px; border-radius: 999px; background: rgba(26,188,156,0.15); color:#48C9B0; font-size:14px; margin-right:8px; border: 1px solid rgba(26,188,156,0.2); font-weight: 600; }
+  .split { display:grid; grid-template-columns: 1.1fr 1fr; gap: 36px; align-items: start; }
+  .title-row { display:flex; align-items:center; gap: 16px; margin-bottom: 10px; }
+  .brand { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg,#F39C12,#1ABC9C); display:flex; align-items:center; justify-content:center; font-weight:800; color:white; font-size: 18px; box-shadow: 0 4px 16px rgba(243,156,18,0.3); }
+  b { color: #F5B041; font-weight: 700; }
+  ol { padding-left: 24px; margin: 8px 0; } ol li { margin: 8px 0; }
+  .team-box { margin-top: 30px; background: rgba(22, 27, 34, 0.85); border: 1px solid rgba(243,156,18,0.3); border-radius: 14px; padding: 20px 28px; backdrop-filter: blur(8px); max-width: 600px; }
+  .team-title { font-size: 14px; color: #F5B041; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 12px; }
+  .team-members { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .team-member { font-size: 16px; color: #E9ECEF; padding: 6px 0; border-left: 3px solid #F39C12; padding-left: 12px; }
+  .team-repo { font-size: 14px; color: #48C9B0; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); font-family: 'Fira Code', Consolas, monospace; }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="deck" id="deck">
+
+  <section class="slide active">
+    <div class="title-row"><div class="brand">CB</div><span class="pill">Final Project Demo</span></div>
+    <h1>Campus Room &amp; Facility Booking System</h1>
+    <p class="subtitle">A full-stack MERN application with role-based access, approval workflows, and complete audit logging.</p>
+    <div class="grid-3" style="margin-top:30px;">
+      <div class="card"><div class="stat">MERN</div><div class="stat-label">Stack</div></div>
+      <div class="card"><div class="stat">129</div><div class="stat-label">Automated Tests</div></div>
+      <div class="card"><div class="stat">4</div><div class="stat-label">User Roles</div></div>
+    </div>
+    <div class="team-box">
+      <div class="team-title">Presented by</div>
+      <div class="team-members">
+        <div class="team-member">22JE1013 Tannu Kumari</div>
+        <div class="team-member">22JE1051 Vishnu Vardhan</div>
+        <div class="team-member">22JE1023 U Sai Hemanth</div>
+        <div class="team-member">22JE0904 Shinagam Chinna</div>
+      </div>
+      <div class="team-repo">github.com/tannu371/campus-booking-system</div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>Problem &amp; Scope</h2>
+    <div class="split">
+      <div><h3>The Problem</h3><ul>
+        <li>Manual room booking leads to <b>double-bookings</b> and conflicts.</li>
+        <li>No visibility for admins on who booked what and when.</li>
+        <li>No governance — controlled rooms need approval workflows.</li>
+        <li>No trail of booking actions for audits.</li>
+      </ul></div>
+      <div><h3>Our Solution</h3><ul>
+        <li><b>Self-service booking</b> for students, staff &amp; faculty.</li>
+        <li><b>Real-time availability</b> with an interactive calendar.</li>
+        <li><b>Approval workflow</b> for controlled rooms.</li>
+        <li><b>Audit logs</b> with 19 action types for full traceability.</li>
+        <li><b>Atomic conflict detection</b> via MongoDB transactions.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>Tech Stack &amp; Architecture</h2>
+    <div class="grid-2">
+      <div class="card"><h3>Frontend</h3>
+        <span class="tag">React 18</span><span class="tag">Vite</span><span class="tag">FullCalendar.js</span>
+        <span class="tag">Axios</span><span class="tag">Context API</span><span class="tag">Glassmorphism CSS</span></div>
+      <div class="card"><h3>Backend</h3>
+        <span class="tag">Node.js</span><span class="tag">Express.js</span><span class="tag">MongoDB + Mongoose</span>
+        <span class="tag">JWT + bcrypt</span><span class="tag">Nodemailer (SMTP)</span><span class="tag">Jest + Supertest</span></div>
+      <div class="card"><h3>Architecture Layers</h3><ul>
+        <li><b>Routes</b> → request validation (400 VALIDATION_ERROR)</li>
+        <li><b>Middleware</b> → JWT auth + admin guards + rate limiting</li>
+        <li><b>Controllers</b> → business rules, conflict checks</li>
+        <li><b>Models</b> → Mongoose schemas &amp; unique indexes</li>
+        <li><b>Utils</b> → validators, audit logger, email templates</li>
+      </ul></div>
+      <div class="card"><h3>Deployment-Ready</h3><ul>
+        <li>Safe for PM2 cluster / Kubernetes replicas</li>
+        <li>DB-level enforcement prevents double-booking</li>
+        <li>CORS allowlist, rate-limiting, pinned dependencies</li>
+        <li>Environment-driven config (JWT TTLs, SMTP, seed)</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>User Features</h2>
+    <div class="grid-2">
+      <div class="card"><h3>Discover &amp; Browse</h3><ul>
+        <li>Filter by <b>type</b>, <b>building</b>, <b>capacity</b></li>
+        <li>Interactive calendar showing real-time availability</li>
+        <li>Room detail view with schedule visualization</li></ul></div>
+      <div class="card"><h3>Book &amp; Manage</h3><ul>
+        <li>Create booking with client + server-side validation</li>
+        <li>Unique <b>confirmation code</b> generated per booking</li>
+        <li>Role-based limits: admin 50 · faculty 20 · staff 10 · student 5</li>
+        <li>Cancellation with reason tracking</li></ul></div>
+      <div class="card"><h3>Check-In System</h3><ul>
+        <li>Check-in only allowed <b>during booked time window</b></li>
+        <li>Timezone-stable via UTC datetimes</li>
+        <li>Marks no-shows automatically for analytics</li></ul></div>
+      <div class="card"><h3>Notifications</h3><ul>
+        <li>Email confirmations via Nodemailer</li>
+        <li>Approval / rejection notifications</li>
+        <li>HTML-escaped email templates (XSS safe)</li></ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>Admin Capabilities</h2>
+    <div class="grid-2">
+      <div class="card"><h3>Dashboard &amp; Analytics</h3><ul>
+        <li>Live stats: active bookings, pending approvals, users</li>
+        <li>Booking trends &amp; no-show rates</li>
+        <li>Room utilization reports</li></ul></div>
+      <div class="card"><h3>Room Management</h3><ul>
+        <li>Add / edit / <b>soft-delete</b> rooms</li>
+        <li>Control which rooms require approval</li>
+        <li>Set capacity, type, building metadata</li></ul></div>
+      <div class="card"><h3>Booking Oversight</h3><ul>
+        <li>Approve / reject pending bookings</li>
+        <li>Override or cancel conflicting bookings</li>
+        <li>Alternative room suggestions on conflicts</li></ul></div>
+      <div class="card"><h3>User &amp; Audit Controls</h3><ul>
+        <li>Change roles, suspend / activate users</li>
+        <li><b>19-action audit log</b> with pagination &amp; filtering</li>
+        <li>Recent-activity feed + action-type breakdown</li></ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>Security Hardening</h2>
+    <div class="grid-2">
+      <div class="card"><h3>Authentication</h3><ul>
+        <li>Short-lived JWT access tokens (1h)</li>
+        <li>Rotating refresh tokens (7d)</li>
+        <li>Token revocation via <code>jti</code> tracking</li>
+        <li>Active-status check blocks suspended users</li></ul></div>
+      <div class="card"><h3>Input &amp; Injection</h3><ul>
+        <li>NoSQL injection mitigation (primitive type checks)</li>
+        <li>Escaped regex inputs to prevent ReDoS</li>
+        <li>Schema validation at route layer</li>
+        <li>HTML escaping in email output</li></ul></div>
+      <div class="card"><h3>Access Control</h3><ul>
+        <li>Role-based guards on every admin endpoint</li>
+        <li>Role-based booking quotas</li>
+        <li>Soft-delete visibility enforcement</li></ul></div>
+      <div class="card"><h3>Infrastructure</h3><ul>
+        <li>CORS allowlist (trusted origins only)</li>
+        <li>Rate limiting on auth &amp; admin routes</li>
+        <li>Pinned runtime dependencies</li>
+        <li>CSP headers + hardened error responses</li></ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>Testing Strategy — 129 Automated Tests</h2>
+    <p class="subtitle">Jest + Supertest, layered: Unit → Integration → Edge → Security</p>
+    <div class="grid-3" style="margin-top:16px;">
+      <div class="card"><div class="stat">67</div><div class="stat-label">Unit Tests</div>
+        <p style="margin-top:8px;">Pure-function logic: time, overlap, policy, codes.</p></div>
+      <div class="card"><div class="stat">47</div><div class="stat-label">Integration Tests</div>
+        <p style="margin-top:8px;">Full API + MongoDB flows via Supertest.</p></div>
+      <div class="card"><div class="stat">15</div><div class="stat-label">Edge + Security</div>
+        <p style="margin-top:8px;">Boundaries, mass-assignment, NoSQL injection.</p></div>
+    </div>
+    <div class="card" style="margin-top:22px;"><h3>Coverage Highlights</h3><ul>
+      <li><code>bookingValidator.js</code> — <b>98.9%</b> statements · 91.5% branches</li>
+      <li><code>auth.js</code> middleware — <b>100%</b> statements &amp; functions</li>
+      <li><code>emailTemplates.js</code> — 93.8% statements</li></ul></div>
+  </section>
+
+  <section class="slide">
+    <h2>What I Tested — Suite Breakdown</h2>
+    <div class="grid-2">
+      <div class="card"><h3>Unit Suites (<code>tests/unit</code>)</h3><ul>
+        <li><code>timeValidator.test.js</code> — time-order &amp; duration rules</li>
+        <li><code>overlapDetector.test.js</code> — interval conflict logic</li>
+        <li><code>intervalTree.test.js</code> — interval tree data structure</li>
+        <li><code>policyValidator.test.js</code> — per-role booking limits</li>
+        <li><code>priorityCalculator.test.js</code> — approval priority</li>
+        <li><code>recurrenceEngine.test.js</code> — recurring bookings</li>
+        <li><code>confirmationCode.test.js</code> — uniqueness &amp; format</li>
+        <li><code>lockManager.test.js</code> — concurrency locks</li></ul></div>
+      <div class="card"><h3>Integration Suites (<code>tests/integration</code>)</h3><ul>
+        <li><code>bookingCreation.test.js</code> — POST /bookings happy &amp; invalid paths</li>
+        <li><code>bookingCancellation.test.js</code> — cancel flow + audit entries</li>
+        <li><code>bookingCheckIn.test.js</code> — window enforcement</li>
+        <li><code>approvalRace.test.js</code> — concurrent approve/reject</li>
+        <li><code>recurringQuota.test.js</code> — quota enforcement</li>
+        <li><code>roomApi.test.js</code> — room CRUD + soft-delete visibility</li>
+        <li><code>userApi.test.js</code> — suspend/activate/role change</li></ul></div>
+      <div class="card"><h3>Edge Cases (<code>tests/edge</code>)</h3><ul>
+        <li><code>edgeCases.test.js</code> — DST, back-to-back bookings, 0-min duration, max capacity, invalid IDs</li></ul></div>
+      <div class="card"><h3>Security (<code>tests/security</code>)</h3><ul>
+        <li><code>massAssignment.test.js</code> — prevents role/status injection via body</li>
+        <li><code>nosqlInjection.test.js</code> — rejects operator payloads like $ne:null</li></ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>Live Demo Script</h2>
+    <div class="split">
+      <div><h3>Setup (2 windows)</h3><ul>
+        <li>Tab 1 → login as <b>admin</b> (<code>admin@campus.edu</code>)</li>
+        <li>Tab 2 → login as <b>student</b> (<code>john@campus.edu</code>)</li>
+        <li>Run <code>npm run dev</code> on frontend &amp; backend</li></ul>
+        <h3>Run Tests Live</h3>
+<pre>cd backend
+npm test                  # all 129 tests
+npm run test:coverage     # coverage report
+npm run test:security     # security-focused</pre></div>
+      <div><h3>Walkthrough</h3>
+        <ol style="padding-left:24px;">
+          <li><b>Browse &amp; Filter</b> rooms by capacity / building.</li>
+          <li><b>Create a booking</b> as the student — show confirmation code.</li>
+          <li><b>Trigger a conflict</b> — book same slot, observe rejection + alternatives.</li>
+          <li><b>Approval flow</b> — request a controlled room, approve from admin tab.</li>
+          <li><b>Check-in window</b> — try before window (fails), during (succeeds).</li>
+          <li><b>Admin ops</b> — soft-delete a room; it disappears from user view.</li>
+          <li><b>Audit log</b> — scroll the activity feed showing every action.</li>
+        </ol></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <h2>Conclusion &amp; Future Work</h2>
+    <div class="split">
+      <div><h3>What Was Delivered</h3><ul>
+        <li>Full booking lifecycle with governance &amp; audit</li>
+        <li>Layered security: route validation + controller checks + DB constraints</li>
+        <li><b>129 automated tests</b> across unit / integration / edge / security</li>
+        <li>Production-ready: horizontally scalable, conflict-safe</li></ul></div>
+      <div><h3>Next Improvements</h3><ul>
+        <li>Redis-backed token revocation for distributed scale</li>
+        <li>End-to-end browser tests (Playwright / Cypress)</li>
+        <li>Load/perf test artifact wired into CI</li>
+        <li>Centralized security-event dashboard</li>
+        <li>Mobile PWA wrapper</li></ul></div>
+    </div>
+    <div class="card" style="margin-top:24px; text-align:center;">
+      <h3 style="color:#6ee7b7;">Thank you — Questions?</h3>
+      <p style="margin-top:8px;">Repository: <code>github.com/tannu371/campus-booking-system</code></p>
+    </div>
+  </section>
+
+</div>
+
+<div class="counter" id="counter">1 / 10</div>
+<div class="nav">
+  <button class="btn" onclick="prev()">&#8592; Prev</button>
+  <button class="btn" onclick="next()">Next &#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let idx = 0;
+  function show(n) {
+    slides[idx].classList.remove('active');
+    idx = (n + slides.length) % slides.length;
+    slides[idx].classList.add('active');
+    document.getElementById('counter').textContent = (idx+1) + ' / ' + slides.length;
+    document.getElementById('bar').style.width = ((idx+1)/slides.length*100) + '%';
+  }
+  function next() { show(idx + 1); }
+  function prev() { show(idx - 1); }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') next();
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') prev();
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length - 1);
+  });
+  show(0);
+</script>
+</body>
+</html>
