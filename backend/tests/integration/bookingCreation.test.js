@@ -349,6 +349,60 @@ describe('POST /api/bookings — Booking Creation', () => {
         expect(count).toBeGreaterThan(0);
       }
     });
+
+    test('13.6: Should return 400 for invalid startTime format', async () => {
+      const res = await request(app)
+        .post('/api/bookings')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({
+          room: room._id,
+          title: 'Invalid Time',
+          date: tomorrow(),
+          startTime: '9:00',
+          endTime: '11:00'
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+      expect(Array.isArray(res.body.details)).toBe(true);
+      expect(res.body.details.some(d => d.field === 'startTime')).toBe(true);
+    });
+
+    test('13.7: Should return 400 for negative attendeeCount', async () => {
+      const res = await request(app)
+        .post('/api/bookings')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({
+          room: room._id,
+          title: 'Negative Attendees',
+          date: tomorrow(),
+          startTime: '10:00',
+          endTime: '11:00',
+          attendeeCount: -2
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+      expect(res.body.details.some(d => d.field === 'attendeeCount')).toBe(true);
+    });
+
+    test('13.8: Should return 400 for non-integer attendeeCount', async () => {
+      const res = await request(app)
+        .post('/api/bookings')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({
+          room: room._id,
+          title: 'Float Attendees',
+          date: tomorrow(),
+          startTime: '10:00',
+          endTime: '11:00',
+          attendeeCount: 10.75
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+      expect(res.body.details.some(d => d.field === 'attendeeCount')).toBe(true);
+    });
   });
 
   // ─── Authentication (Tests 14.1-14.3) ──────────────────────────
@@ -385,6 +439,71 @@ describe('POST /api/bookings — Booking Creation', () => {
           date: tomorrow(), startTime: '09:00', endTime: '11:00'
         });
       expect(res.status).toBe(401);
+    });
+  });
+
+  describe('Soft-deleted room visibility in booking reads', () => {
+    test('Should exclude bookings linked to inactive rooms from GET /api/bookings', async () => {
+      const activeRoom = await Room.create({
+        name: 'Active Listing Room',
+        type: 'classroom',
+        capacity: 35,
+        building: 'A Block',
+        floor: 2,
+        isActive: true
+      });
+      const inactiveRoom = await Room.create({
+        name: 'Inactive Listing Room',
+        type: 'classroom',
+        capacity: 35,
+        building: 'B Block',
+        floor: 2,
+        isActive: false
+      });
+
+      await Booking.create({
+        room: activeRoom._id,
+        user: student._id,
+        title: 'Visible Booking',
+        date: tomorrow(),
+        startTime: '09:00',
+        endTime: '10:00',
+        status: 'approved',
+        confirmationCode: `BK-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      });
+      await Booking.create({
+        room: inactiveRoom._id,
+        user: student._id,
+        title: 'Hidden Booking',
+        date: tomorrow(),
+        startTime: '11:00',
+        endTime: '12:00',
+        status: 'approved',
+        confirmationCode: `BK-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      });
+
+      const res = await request(app)
+        .get('/api/bookings')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.bookings.length).toBe(1);
+      expect(res.body.bookings[0].title).toBe('Visible Booking');
+    });
+
+    test('Should return 404 for GET /api/bookings/room/:roomId when room is soft-deleted', async () => {
+      const inactiveRoom = await Room.create({
+        name: 'Inactive Room Query',
+        type: 'lab',
+        capacity: 20,
+        building: 'C Block',
+        floor: 1,
+        isActive: false
+      });
+
+      const res = await request(app).get(`/api/bookings/room/${inactiveRoom._id}`);
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Room not found');
     });
   });
 });

@@ -17,6 +17,26 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 
+const deriveOrigin = (value) => {
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+};
+
+const allowedOrigins = new Set();
+const frontendOrigin = deriveOrigin(process.env.FRONTEND_URL);
+if (frontendOrigin) allowedOrigins.add(frontendOrigin);
+
+if (process.env.NODE_ENV !== 'production') {
+  const viteApiOrigin = deriveOrigin(process.env.VITE_API_URL);
+  if (viteApiOrigin) allowedOrigins.add(viteApiOrigin);
+  // Local dev fallback when env vars are missing
+  allowedOrigins.add('http://localhost:5173');
+}
+
 // Connect to MongoDB and auto-seed if empty
 const startDB = async () => {
   await connectDB();
@@ -65,7 +85,13 @@ startDB();
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS origin not allowed'));
+  },
   credentials: true
 }));
 app.use((req, res, next) => {
@@ -93,6 +119,13 @@ app.get('/api/health', (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
+  if (err?.message === 'CORS origin not allowed') {
+    return res.status(403).json({
+      message: 'Origin not allowed by CORS policy',
+      error: 'CORS_ORIGIN_DENIED'
+    });
+  }
+
   console.error('❌ Unhandled error:', err);
   res.status(500).json({ message: 'Internal server error' });
 });

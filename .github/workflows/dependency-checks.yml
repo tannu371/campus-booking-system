@@ -1,0 +1,40 @@
+name: Dependency Checks
+
+on:
+  push:
+    paths:
+      - "backend/package.json"
+      - "backend/package-lock.json"
+      - ".github/workflows/dependency-checks.yml"
+  pull_request:
+    paths:
+      - "backend/package.json"
+      - "backend/package-lock.json"
+      - ".github/workflows/dependency-checks.yml"
+
+jobs:
+  dependency-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Verify core dependency tree
+        run: npm run dep:check
+
+      - name: Production vulnerability audit
+        run: npm run audit:prod

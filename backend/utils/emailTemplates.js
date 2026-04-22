@@ -54,6 +54,13 @@ const infoBoxStyle = `
   margin: 16px 0;
 `;
 
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
 /**
  * Welcome email for new users
  */
@@ -63,7 +70,7 @@ const welcomeEmail = (name) => `
     <h1 style="margin:0; font-size:28px;">🏫 Welcome to CampusBook!</h1>
   </div>
   <div style="${bodyStyle}">
-    <h2 style="color:#1a1a2e; margin-bottom:16px;">Hi ${name}! 👋</h2>
+    <h2 style="color:#1a1a2e; margin-bottom:16px;">Hi ${escapeHtml(name)}! 👋</h2>
     <p>Thank you for creating an account on <strong>CampusBook</strong> — your one-stop platform for booking campus rooms and facilities.</p>
     <div style="${infoBoxStyle}">
       <strong>What you can do:</strong>
@@ -94,17 +101,17 @@ const bookingConfirmationEmail = (booking, room, user) => `
     <h1 style="margin:0; font-size:24px;">📅 Booking Confirmed!</h1>
   </div>
   <div style="${bodyStyle}">
-    <h2 style="color:#1a1a2e; margin-bottom:16px;">Hi ${user.name},</h2>
+    <h2 style="color:#1a1a2e; margin-bottom:16px;">Hi ${escapeHtml(user.name)},</h2>
     <p>Your room booking has been successfully created. Here are the details:</p>
     <div style="${infoBoxStyle}">
       <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:6px 0; color:#6b7280; width:120px;"><strong>Title:</strong></td><td style="padding:6px 0;">${booking.title}</td></tr>
-        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Room:</strong></td><td style="padding:6px 0;">${room.name}</td></tr>
-        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Building:</strong></td><td style="padding:6px 0;">${room.building}, Floor ${room.floor}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280; width:120px;"><strong>Title:</strong></td><td style="padding:6px 0;">${escapeHtml(booking.title)}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Room:</strong></td><td style="padding:6px 0;">${escapeHtml(room.name)}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Building:</strong></td><td style="padding:6px 0;">${escapeHtml(room.building)}, Floor ${escapeHtml(room.floor)}</td></tr>
         <tr><td style="padding:6px 0; color:#6b7280;"><strong>Date:</strong></td><td style="padding:6px 0;">${new Date(booking.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
-        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Time:</strong></td><td style="padding:6px 0;">${booking.startTime} — ${booking.endTime}</td></tr>
-        ${booking.purpose ? `<tr><td style="padding:6px 0; color:#6b7280;"><strong>Purpose:</strong></td><td style="padding:6px 0;">${booking.purpose}</td></tr>` : ''}
-        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Status:</strong></td><td style="padding:6px 0;"><span style="background:#27ae60; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; text-transform:uppercase;">${booking.status}</span></td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Time:</strong></td><td style="padding:6px 0;">${escapeHtml(booking.startTime)} — ${escapeHtml(booking.endTime)}</td></tr>
+        ${booking.purpose ? `<tr><td style="padding:6px 0; color:#6b7280;"><strong>Purpose:</strong></td><td style="padding:6px 0;">${escapeHtml(booking.purpose)}</td></tr>` : ''}
+        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Status:</strong></td><td style="padding:6px 0;"><span style="background:#27ae60; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; text-transform:uppercase;">${escapeHtml(booking.status)}</span></td></tr>
       </table>
     </div>
     <div style="text-align:center;">
@@ -143,17 +150,17 @@ const bookingStatusEmail = (booking, room, user, newStatus) => {
     <h1 style="margin:0; font-size:24px;">📋 Booking Status Update</h1>
   </div>
   <div style="${bodyStyle}">
-    <h2 style="color:#1a1a2e; margin-bottom:16px;">Hi ${user.name},</h2>
-    <p>${statusMessages[newStatus]}</p>
+    <h2 style="color:#1a1a2e; margin-bottom:16px;">Hi ${escapeHtml(user.name)},</h2>
+    <p>${escapeHtml(statusMessages[newStatus])}</p>
     <div style="text-align:center; margin:20px 0;">
-      <span style="background:${statusColor}; color:white; padding:8px 20px; border-radius:20px; font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${newStatus}</span>
+      <span style="background:${statusColor}; color:white; padding:8px 20px; border-radius:20px; font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${escapeHtml(newStatus)}</span>
     </div>
     <div style="${infoBoxStyle}">
       <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:6px 0; color:#6b7280; width:120px;"><strong>Title:</strong></td><td style="padding:6px 0;">${booking.title}</td></tr>
-        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Room:</strong></td><td style="padding:6px 0;">${room.name || 'N/A'}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280; width:120px;"><strong>Title:</strong></td><td style="padding:6px 0;">${escapeHtml(booking.title)}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Room:</strong></td><td style="padding:6px 0;">${escapeHtml(room.name || 'N/A')}</td></tr>
         <tr><td style="padding:6px 0; color:#6b7280;"><strong>Date:</strong></td><td style="padding:6px 0;">${new Date(booking.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
-        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Time:</strong></td><td style="padding:6px 0;">${booking.startTime} — ${booking.endTime}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280;"><strong>Time:</strong></td><td style="padding:6px 0;">${escapeHtml(booking.startTime)} — ${escapeHtml(booking.endTime)}</td></tr>
       </table>
     </div>
     <div style="text-align:center;">

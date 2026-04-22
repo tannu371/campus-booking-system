@@ -101,6 +101,17 @@ describe('User Management API', () => {
         .send({ status: 'suspended' });
       expect(res.status).toBe(403);
     });
+
+    test('Rejects invalid status value at route validation layer', async () => {
+      const res = await request(app)
+        .put(`/api/users/${student._id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'paused' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+      expect(res.body.details.some(d => d.field === 'status')).toBe(true);
+    });
   });
 
   describe('PUT /api/users/:id/role (admin)', () => {
@@ -140,6 +151,17 @@ describe('User Management API', () => {
 
       const updated = await User.findById(student._id);
       expect(updated.maxActiveBookings).toBe(10);
+    });
+
+    test('Rejects invalid role value at route validation layer', async () => {
+      const res = await request(app)
+        .put(`/api/users/${student._id}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'super_admin' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+      expect(res.body.details.some(d => d.field === 'role')).toBe(true);
     });
   });
 });

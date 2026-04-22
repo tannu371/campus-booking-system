@@ -89,6 +89,30 @@ describe('Room API', () => {
     });
   });
 
+  describe('GET /api/rooms/:id', () => {
+    test('Should return 404 for soft-deleted room', async () => {
+      const room = await Room.create({
+        name: 'Archived Room',
+        type: 'classroom',
+        capacity: 40,
+        building: 'Legacy Block',
+        floor: 1,
+        isActive: false
+      });
+
+      const res = await request(app).get(`/api/rooms/${room._id}`);
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Room not found');
+    });
+
+    test('Should return 400 for invalid room id format', async () => {
+      const res = await request(app).get('/api/rooms/not-an-object-id');
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+      expect(res.body.details.some(d => d.field === 'id')).toBe(true);
+    });
+  });
+
   describe('GET /api/rooms/buildings', () => {
     test('Should return unique building names', async () => {
       await Room.create([

@@ -1,3 +1,131 @@
+# Campus Room & Facility Booking System
+
+Production-focused web application for managing campus room bookings with role-based access, approval workflows, audit logs, and admin operations.
+
+## What This Project Includes
+
+- Room discovery with filters (type, building, capacity) and availability checks
+- Booking lifecycle: create, approve/reject, cancel, check-in, recurring bookings
+- Role-based controls for user, staff, faculty, and admin
+- Admin modules for room management, user management, booking oversight, and audit history
+- Security hardening (request validation, auth protections, CORS allowlist, rate limits, output escaping)
+- Integration and security-oriented test suites
+
+## Tech Stack
+
+- Frontend: React + Vite
+- Backend: Node.js + Express
+- Database: MongoDB + Mongoose
+- Auth: JWT (access + refresh model)
+- Tests: Jest + Supertest
+
+## Project Structure
+
+```text
+campus-booking-system/
+├── frontend/
+├── backend/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── tests/
+│   └── server.js
+└── docs/
+```
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- MongoDB running locally or accessible via URI
+
+### Backend
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+App runs on:
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:5001`
+
+## Required Backend Environment
+
+Set in `backend/.env`:
+
+- `JWT_SECRET`
+- `MONGO_URI`
+- `FRONTEND_URL`
+
+Common optional settings:
+
+- `JWT_ACCESS_EXPIRES_IN` (default `1h`)
+- `JWT_REFRESH_EXPIRES_IN` (default `7d`)
+- `AUTO_SEED_ON_EMPTY`
+- `ALLOW_IN_MEMORY_DB`
+
+## Testing
+
+From `backend/`:
+
+```bash
+npm test
+npm run test:unit
+npm run test:integration
+npm run test:security
+npm run test:coverage
+```
+
+Dependency/security checks:
+
+```bash
+npm run dep:check
+npm run audit:prod
+```
+
+## Security Controls (Implemented)
+
+- Access + refresh token flow with cookie-based refresh and token rotation
+- Active-account enforcement in auth middleware
+- Token revocation support (`jti` + revocation store)
+- CORS allowlist (trusted origins only)
+- Rate limits on auth and sensitive admin mutation routes
+- Route-layer request validation with consistent `400 VALIDATION_ERROR` responses
+- NoSQL and regex hardening for search/filter inputs
+- Soft-delete visibility enforcement for rooms/bookings
+- Timezone-stable booking check-in window logic
+- HTML escaping in email templates
+
+## API Snapshot
+
+- Auth: `/api/auth/*`
+- Rooms: `/api/rooms/*`
+- Bookings: `/api/bookings/*`
+- Users (admin): `/api/users/*`
+- Audit (admin): `/api/audit/*`
+
+## Presentation Guide
+
+Use `docs/PROJECT_PRESENTATION.md` for:
+
+- presentation structure
+- demo script
+- test coverage walkthrough
+- delivery checklist
+
 # 🏫 Campus Room & Facility Booking System
 
 A production-grade web application for booking campus facilities — classrooms, seminar halls, labs, and meeting rooms — with conflict-free scheduling, real-time availability calendars, comprehensive audit logging, and a full admin dashboard.
@@ -286,6 +414,15 @@ npm run test:unit      # Unit tests only (67 tests, ~0.4s)
 npm run test:integration  # Integration tests (47 tests, ~5s)
 npm run test:edge      # Edge case tests (15 tests, ~3s)
 npm run test:coverage  # Full run with Istanbul coverage report
+npm run dep:check      # Verify mongoose/mongodb/express dependency tree
+npm run audit:prod     # Production dependency vulnerability audit
+```
+
+After dependency edits, regenerate and commit lockfile:
+
+```bash
+cd backend
+npm install
 ```
 
 ### Integration DB Fallback
@@ -301,6 +438,12 @@ Example:
 TEST_MONGO_URI="mongodb://localhost:27017/campus-booking-test" npm run test:integration
 ```
 
+Recent integration coverage additions:
+- soft-deleted rooms return `404` on `GET /api/rooms/:id`
+- `GET /api/bookings` excludes bookings attached to `isActive:false` rooms
+- `GET /api/bookings/room/:roomId` returns `404` for soft-deleted rooms
+- route validation rejects malformed payloads/params (`startTime` format, attendee count bounds, invalid role/status enums, invalid ObjectId params)
+
 ### Coverage Highlights
 
 | Module | Statements | Branches | Functions | Lines |
@@ -314,6 +457,8 @@ TEST_MONGO_URI="mongodb://localhost:27017/campus-booking-test" npm run test:inte
 Backend environment flags in `backend/.env`:
 
 - `MONGO_URI` — persistent MongoDB connection string
+- `FRONTEND_URL` — allowed browser origin for CORS (required for production)
+- `VITE_API_URL` — parsed for origin allowlist in non-production to support local dev setup
 - `JWT_ACCESS_EXPIRES_IN=1h` — access token lifetime (default: `1h`)
 - `JWT_REFRESH_EXPIRES_IN=7d` — refresh token lifetime (default: `7d`)
 - `AUTO_SEED_ON_EMPTY=false` — keep `false` for normal usage; set `true` only for demo bootstrap
@@ -338,6 +483,12 @@ This application implements multiple security measures:
 - ✅ **Regex Search Hardening** - User search/building inputs are escaped and length-limited before `$regex` use to prevent ReDoS and broad wildcard scans
 - ✅ **CSP Header** - Content Security Policy header applied by backend to reduce XSS impact
 - ✅ **Timezone-Stable Check-In Windows** - Check-in uses absolute UTC datetimes (`startDateTimeUtc` / `endDateTimeUtc`) instead of server-local `setHours()` math
+- ✅ **Email Template Output Escaping** - User-controlled values in HTML emails are escaped before interpolation to prevent script/style/link injection in mail clients
+- ✅ **Soft-Delete Visibility Enforcement** - Room reads and booking list endpoints exclude `isActive:false` rooms to prevent exposure of deactivated resources
+- ✅ **Strict CORS Allowlist** - Requests are accepted only from configured trusted origins (instead of wildcard/default-open policy)
+- ✅ **Rate Limiting for Abuse Resistance** - Auth routes and admin mutation endpoints are throttled to reduce credential stuffing/brute-force and high-volume mutation abuse
+- ✅ **Route-Layer Schema Validation** - Auth/booking/room/user mutations validate IDs, enums, `HH:MM` time fields, and numeric bounds before controllers execute
+- ✅ **Pinned Runtime Dependencies** - Backend production dependencies are pinned to exact versions for reproducible installs
 
 ### Security Hardening Details (Consolidated)
 
@@ -354,7 +505,25 @@ and `backend/NOSQL-INJECTION-FIX.md`.
 - **Mass-assignment protection**: strict allowlists for room/booking create-update endpoints; protected fields rejected with explicit `PROTECTED_FIELDS` errors.
 - **Recurring quota enforcement**: recurring bookings validate role quota before creation and return `RECURRING_QUOTA_EXCEEDED` on overflow.
 - **Timezone consistency**: bookings persist `bookingDateKey` plus absolute UTC start/end datetimes; check-in authorization compares against UTC timestamps, preventing host/container timezone drift.
+- **Email safety**: HTML email templates escape interpolated user/booking/room fields (name, title, purpose, room/building/time/status text) before rendering.
+- **Soft-delete consistency**: room lookups by id/schedule/utilization require active rooms, and booking listing endpoints only return bookings linked to active rooms.
+- **Cross-origin hardening**: backend enforces origin allowlist using `FRONTEND_URL` and (in dev) parsed `VITE_API_URL` origin.
+- **Request throttling**: auth endpoints (`/api/auth/*`) and sensitive admin mutation endpoints are protected with express rate limits.
+- **Early request validation**: route-level schemas (express-validator) reject malformed payloads with consistent `400` responses.
+- **Dependency hygiene**: CI runs `npm ls mongoose mongodb express` and `npm audit --omit=dev` on backend dependency changes.
 - **Defense in depth**: CSP header, role-based access, audit logs, and secure operational defaults.
+
+Validation error response shape:
+
+```json
+{
+  "message": "Validation failed",
+  "error": "VALIDATION_ERROR",
+  "details": [
+    { "field": "startTime", "message": "startTime must be HH:MM" }
+  ]
+}
+```
 
 ## 🏗️ Concurrency & Multi-Instance Safety
 

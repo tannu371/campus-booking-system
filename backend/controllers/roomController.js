@@ -55,7 +55,7 @@ const getRooms = async (req, res) => {
 // @route   GET /api/rooms/:id
 const getRoom = async (req, res) => {
   try {
-    const room = await Room.findById(req.params.id);
+    const room = await Room.findOne({ _id: req.params.id, isActive: true });
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
@@ -78,7 +78,7 @@ const getRoomSchedule = async (req, res) => {
       status: { $in: ['approved', 'pending'] }
     }).populate('user', 'name email').sort({ startTime: 1 });
 
-    const room = await Room.findById(req.params.id);
+    const room = await Room.findOne({ _id: req.params.id, isActive: true });
 
     res.json({
       room: room ? { name: room.name, operatingHoursStart: room.operatingHoursStart, operatingHoursEnd: room.operatingHoursEnd } : null,
@@ -98,7 +98,7 @@ const getRoomUtilization = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
-    const room = await Room.findById(req.params.id);
+    const room = await Room.findOne({ _id: req.params.id, isActive: true });
     if (!room) return res.status(404).json({ message: 'Room not found' });
 
     const bookings = await Booking.find({

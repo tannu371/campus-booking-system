@@ -334,12 +334,22 @@ const getAllBookings = async (req, res) => {
 
     const filter = {};
     if (status) filter.status = status;
-    if (room) filter.room = room;
     if (startDate || endDate) {
       filter.date = {};
       if (startDate) filter.date.$gte = startDate;
       if (endDate) filter.date.$lte = endDate;
     }
+
+    // Exclude bookings tied to soft-deleted rooms.
+    const activeRoomDocs = await Room.find(
+      room ? { _id: room, isActive: true } : { isActive: true }
+    ).select('_id');
+    const activeRoomIds = activeRoomDocs.map((r) => r._id);
+
+    if (room && activeRoomIds.length === 0) {
+      return res.json({ bookings: [], total: 0, page, totalPages: 0 });
+    }
+    filter.room = room ? room : { $in: activeRoomIds };
 
     const skip = (page - 1) * limit;
     const [bookings, total] = await Promise.all([
@@ -366,6 +376,11 @@ const getAllBookings = async (req, res) => {
 // @route   GET /api/bookings/room/:roomId
 const getBookingsByRoom = async (req, res) => {
   try {
+    const room = await Room.findOne({ _id: req.params.roomId, isActive: true }).select('_id');
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
     const bookings = await Booking.find({
       room: req.params.roomId,
       status: { $in: ['pending', 'approved'] }
