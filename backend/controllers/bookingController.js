@@ -31,6 +31,24 @@ const normalizeDateToStartOfDay = (dateValue) => {
   return date;
 };
 
+const toDateKey = (dateValue) => {
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue;
+  }
+
+  const date = new Date(dateValue);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const buildUtcDateTimeFromKey = (dateKey, timeValue) => {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+};
+
 const getDateRangeForDay = (dateValue) => {
   const start = normalizeDateToStartOfDay(dateValue);
   const end = new Date(start);
@@ -105,7 +123,9 @@ const createBooking = async (req, res) => {
 
     const bookingDate = normalizeDateToStartOfDay(date);
     const { start: dayStart, end: dayEnd } = getDateRangeForDay(date);
-    const dateKey = bookingDate.toISOString().split('T')[0];
+    const dateKey = toDateKey(date);
+    const startDateTimeUtc = buildUtcDateTimeFromKey(dateKey, startTime);
+    const endDateTimeUtc = buildUtcDateTimeFromKey(dateKey, endTime);
     const lockKey = `lock:${room}:${dateKey}`;
     const requestId = `${req.user._id}-${Date.now()}`;
 
@@ -181,8 +201,11 @@ const createBooking = async (req, res) => {
         user: req.user._id,
         title,
         date: bookingDate,
+        bookingDateKey: dateKey,
         startTime,
         endTime,
+        startDateTimeUtc,
+        endDateTimeUtc,
         purpose,
         attendeeCount: attendeeCount || null,
         status: initialStatus,
@@ -408,6 +431,16 @@ const updateBooking = async (req, res) => {
     const before = { ...booking.toObject() };
     
     // Apply updates
+    if (updates.date || updates.startTime || updates.endTime) {
+      const effectiveDateKey = toDateKey(updates.date || booking.bookingDateKey || booking.date);
+      const effectiveStartTime = updates.startTime || booking.startTime;
+      const effectiveEndTime = updates.endTime || booking.endTime;
+
+      updates.bookingDateKey = effectiveDateKey;
+      updates.startDateTimeUtc = buildUtcDateTimeFromKey(effectiveDateKey, effectiveStartTime);
+      updates.endDateTimeUtc = buildUtcDateTimeFromKey(effectiveDateKey, effectiveEndTime);
+    }
+
     Object.assign(booking, updates);
     await booking.save();
     
@@ -659,13 +692,19 @@ const adminOverrideBooking = async (req, res) => {
 
     // Create the new booking
     const confirmationCode = generateConfirmationCode();
+    const overrideDateKey = toDateKey(date || existingBooking.bookingDateKey || existingBooking.date);
+    const overrideStartTime = startTime || existingBooking.startTime;
+    const overrideEndTime = endTime || existingBooking.endTime;
     const newBooking = await Booking.create({
       room: existingBooking.room._id,
       user: req.user._id,
       title,
       date: new Date(date || existingBooking.date),
-      startTime: startTime || existingBooking.startTime,
-      endTime: endTime || existingBooking.endTime,
+      bookingDateKey: overrideDateKey,
+      startTime: overrideStartTime,
+      endTime: overrideEndTime,
+      startDateTimeUtc: buildUtcDateTimeFromKey(overrideDateKey, overrideStartTime),
+      endDateTimeUtc: buildUtcDateTimeFromKey(overrideDateKey, overrideEndTime),
       purpose,
       status: 'approved',
       confirmationCode,
@@ -725,13 +764,9 @@ const checkInBooking = async (req, res) => {
 
     // Check-in window validation (strict - only within the booked time window)
     const now = new Date();
-    const startDateTime = new Date(booking.date);
-    const [startH, startM] = booking.startTime.split(':').map(Number);
-    startDateTime.setHours(startH, startM, 0, 0);
-
-    const endDateTime = new Date(booking.date);
-    const [endH, endM] = booking.endTime.split(':').map(Number);
-    endDateTime.setHours(endH, endM, 0, 0);
+    const fallbackDateKey = booking.bookingDateKey || toDateKey(booking.date);
+    const startDateTime = booking.startDateTimeUtc || buildUtcDateTimeFromKey(fallbackDateKey, booking.startTime);
+    const endDateTime = booking.endDateTimeUtc || buildUtcDateTimeFromKey(fallbackDateKey, booking.endTime);
 
     if (now < startDateTime) {
       return res.status(400).json({
@@ -916,6 +951,7 @@ const createRecurringBooking = async (req, res) => {
     for (let i = 0; i < occurrences.length; i++) {
       const occurrence = occurrences[i];
       const occDate = normalizeDateToStartOfDay(occurrence.start);
+      const occDateKey = toDateKey(occDate);
       const initialStatus = determineInitialStatus(user, roomDoc);
       const confirmationCode = generateConfirmationCode();
       const priorityLevel = calculatePriority(user.role);
@@ -928,8 +964,11 @@ const createRecurringBooking = async (req, res) => {
         user: req.user._id,
         title,
         date: occDate,
+        bookingDateKey: occDateKey,
         startTime,
         endTime,
+        startDateTimeUtc: buildUtcDateTimeFromKey(occDateKey, startTime),
+        endDateTimeUtc: buildUtcDateTimeFromKey(occDateKey, endTime),
         purpose,
         attendeeCount: attendeeCount || null,
         status: initialStatus,

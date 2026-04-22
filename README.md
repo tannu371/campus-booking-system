@@ -337,6 +337,7 @@ This application implements multiple security measures:
 - ✅ **Input Validation** - Request validation and sanitization
 - ✅ **Regex Search Hardening** - User search/building inputs are escaped and length-limited before `$regex` use to prevent ReDoS and broad wildcard scans
 - ✅ **CSP Header** - Content Security Policy header applied by backend to reduce XSS impact
+- ✅ **Timezone-Stable Check-In Windows** - Check-in uses absolute UTC datetimes (`startDateTimeUtc` / `endDateTimeUtc`) instead of server-local `setHours()` math
 
 ### Security Hardening Details (Consolidated)
 
@@ -352,6 +353,7 @@ and `backend/NOSQL-INJECTION-FIX.md`.
 - **NoSQL/ReDoS mitigation**: primitive-only query sanitization, enum/objectId/number/date validation, and escaped + length-limited regex search inputs.
 - **Mass-assignment protection**: strict allowlists for room/booking create-update endpoints; protected fields rejected with explicit `PROTECTED_FIELDS` errors.
 - **Recurring quota enforcement**: recurring bookings validate role quota before creation and return `RECURRING_QUOTA_EXCEEDED` on overflow.
+- **Timezone consistency**: bookings persist `bookingDateKey` plus absolute UTC start/end datetimes; check-in authorization compares against UTC timestamps, preventing host/container timezone drift.
 - **Defense in depth**: CSP header, role-based access, audit logs, and secure operational defaults.
 
 ## 🏗️ Concurrency & Multi-Instance Safety

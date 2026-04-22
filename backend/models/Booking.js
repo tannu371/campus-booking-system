@@ -20,6 +20,10 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     required: [true, 'Date is required']
   },
+  bookingDateKey: {
+    type: String,
+    required: [true, 'Booking date key is required']
+  },
   startTime: {
     type: String,
     required: [true, 'Start time is required']
@@ -92,6 +96,14 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  startDateTimeUtc: {
+    type: Date,
+    required: [true, 'UTC start datetime is required']
+  },
+  endDateTimeUtc: {
+    type: Date,
+    required: [true, 'UTC end datetime is required']
+  },
   // Recurring booking fields
   recurrenceRule: {
     type: String,
@@ -115,6 +127,7 @@ const bookingSchema = new mongoose.Schema({
 
 // Compound index for efficient conflict detection queries
 bookingSchema.index({ room: 1, date: 1, status: 1 });
+bookingSchema.index({ room: 1, bookingDateKey: 1, status: 1 });
 bookingSchema.index({ user: 1, status: 1 });
 bookingSchema.index({ status: 1, date: 1 });
 bookingSchema.index({ autoReleaseAt: 1, status: 1, checkedIn: 1 });
@@ -133,5 +146,32 @@ bookingSchema.index(
     name: 'unique_room_date_startTime_active'
   }
 );
+
+bookingSchema.pre('validate', function populateDerivedUtcFields(next) {
+  if (!this.date || !this.startTime || !this.endTime) {
+    return next();
+  }
+
+  if (!this.bookingDateKey) {
+    const baseDate = new Date(this.date);
+    const year = baseDate.getUTCFullYear();
+    const month = String(baseDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(baseDate.getUTCDate()).padStart(2, '0');
+    this.bookingDateKey = `${year}-${month}-${day}`;
+  }
+
+  const [year, month, day] = this.bookingDateKey.split('-').map(Number);
+  const [startHour, startMinute] = this.startTime.split(':').map(Number);
+  const [endHour, endMinute] = this.endTime.split(':').map(Number);
+
+  if (!this.startDateTimeUtc) {
+    this.startDateTimeUtc = new Date(Date.UTC(year, month - 1, day, startHour, startMinute, 0, 0));
+  }
+  if (!this.endDateTimeUtc) {
+    this.endDateTimeUtc = new Date(Date.UTC(year, month - 1, day, endHour, endMinute, 0, 0));
+  }
+
+  next();
+});
 
 module.exports = mongoose.model('Booking', bookingSchema);
