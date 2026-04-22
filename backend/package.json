@@ -11,7 +11,10 @@
     "test:unit": "jest tests/unit --forceExit",
     "test:integration": "jest tests/integration --forceExit --detectOpenHandles",
     "test:edge": "jest tests/edge --forceExit --detectOpenHandles",
-    "test:coverage": "jest --coverage --forceExit --detectOpenHandles"
+    "test:security": "jest tests/security --forceExit --detectOpenHandles",
+    "test:coverage": "jest --coverage --forceExit --detectOpenHandles",
+    "check-conflicts": "node scripts/check-conflicts.js",
+    "create-index": "node scripts/create-unique-index.js"
   },
   "keywords": [],
   "author": "",

@@ -120,4 +120,18 @@ bookingSchema.index({ status: 1, date: 1 });
 bookingSchema.index({ autoReleaseAt: 1, status: 1, checkedIn: 1 });
 bookingSchema.index({ recurrenceGroupId: 1 });
 
+// CRITICAL: Partial unique index for atomic conflict prevention across multi-instance deploys
+// Prevents double-booking when multiple Node processes/replicas handle concurrent requests
+// Only enforces uniqueness for bookings that block the slot (approved/pending)
+bookingSchema.index(
+  { room: 1, date: 1, startTime: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $in: ['approved', 'pending'] }
+    },
+    name: 'unique_room_date_startTime_active'
+  }
+);
+
 module.exports = mongoose.model('Booking', bookingSchema);

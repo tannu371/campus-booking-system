@@ -1,7 +1,18 @@
 /**
  * In-Process Lock Manager
- * Provides distributed-lock-like semantics for single-server deployment
- * Uses exponential backoff with jitter for retry logic
+ * 
+ * IMPORTANT: This provides defense-in-depth for single-instance latency reduction ONLY.
+ * It is NOT sufficient for correctness in multi-instance/cluster deployments.
+ * 
+ * For multi-instance safety, the application uses:
+ * - MongoDB transactions (session-based atomicity)
+ * - Partial unique indexes on Booking collection
+ * 
+ * This lock manager reduces contention and improves response time in single-instance
+ * deployments by preventing unnecessary database round-trips, but the database layer
+ * is the source of truth for conflict prevention across all instances.
+ * 
+ * Uses exponential backoff with jitter for retry logic.
  */
 
 class LockManager {

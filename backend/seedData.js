@@ -7,35 +7,51 @@ const { generateConfirmationCode } = require('./utils/bookingValidator');
 /**
  * Seeds the database with sample data.
  * Called from server.js on first boot or from seed.js CLI.
+ * 
+ * SECURITY: Uses environment variables for passwords.
+ * Set SEED_ADMIN_PASSWORD, SEED_FACULTY_PASSWORD, SEED_USER_PASSWORD, SEED_STAFF_PASSWORD
+ * in your .env file. Defaults are INSECURE and for development only.
  */
 module.exports = async function seedData() {
+  // Get passwords from environment or use INSECURE defaults for dev
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'CHANGE_ME_admin123';
+  const facultyPassword = process.env.SEED_FACULTY_PASSWORD || 'CHANGE_ME_faculty123';
+  const userPassword = process.env.SEED_USER_PASSWORD || 'CHANGE_ME_user123';
+  const staffPassword = process.env.SEED_STAFF_PASSWORD || 'CHANGE_ME_staff123';
+
+  // Warn if using default passwords
+  if (!process.env.SEED_ADMIN_PASSWORD || !process.env.SEED_FACULTY_PASSWORD || 
+      !process.env.SEED_USER_PASSWORD || !process.env.SEED_STAFF_PASSWORD) {
+    console.warn('⚠️  WARNING: Using default seed passwords. Set SEED_*_PASSWORD in .env for production!');
+  }
+
   await User.deleteMany({});
   await Room.deleteMany({});
   await Booking.deleteMany({});
   await AuditLog.deleteMany({});
 
   const admin = await User.create({
-    name: 'Admin User', email: 'admin@campus.edu', password: 'admin123',
+    name: 'Admin User', email: 'admin@campus.edu', password: adminPassword,
     role: 'admin', department: 'Administration', maxActiveBookings: 50
   });
   const faculty = await User.create({
-    name: 'Dr. Sarah Chen', email: 'sarah@campus.edu', password: 'faculty123',
+    name: 'Dr. Sarah Chen', email: 'sarah@campus.edu', password: facultyPassword,
     role: 'faculty', department: 'Computer Science', maxActiveBookings: 20
   });
   const user1 = await User.create({
-    name: 'John Student', email: 'john@campus.edu', password: 'user123',
+    name: 'John Student', email: 'john@campus.edu', password: userPassword,
     role: 'user', department: 'Computer Science'
   });
   const user2 = await User.create({
-    name: 'Alice Johnson', email: 'alice@campus.edu', password: 'user123',
+    name: 'Alice Johnson', email: 'alice@campus.edu', password: userPassword,
     role: 'user', department: 'Electronics'
   });
   const user3 = await User.create({
-    name: 'Bob Smith', email: 'bob@campus.edu', password: 'user123',
+    name: 'Bob Smith', email: 'bob@campus.edu', password: userPassword,
     role: 'user', department: 'Mechanical Engineering'
   });
   await User.create({
-    name: 'Carol Lee', email: 'carol@campus.edu', password: 'staff123',
+    name: 'Carol Lee', email: 'carol@campus.edu', password: staffPassword,
     role: 'staff', department: 'Library', maxActiveBookings: 10
   });
 
@@ -90,5 +106,6 @@ module.exports = async function seedData() {
   ]);
 
   console.log('  Created audit logs');
-  console.log('  📋 Credentials: admin@campus.edu/admin123, john@campus.edu/user123');
+  console.log('  📋 Seed accounts created: admin@campus.edu, sarah@campus.edu, john@campus.edu, alice@campus.edu, bob@campus.edu, carol@campus.edu');
+  console.log('  🔐 Passwords configured via SEED_*_PASSWORD environment variables');
 };

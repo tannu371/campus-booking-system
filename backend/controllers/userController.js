@@ -1,31 +1,40 @@
 const User = require('../models/User');
 const Booking = require('../models/Booking');
 const { logAudit } = require('../utils/auditLogger');
+const { sanitizeString, sanitizeNumber } = require('../utils/sanitizeQuery');
 
-// @desc    Get all users (admin)
+// @desc    Get all users (admin) - with NoSQL injection protection
 // @route   GET /api/users
 const getUsers = async (req, res) => {
   try {
-    const { search, role, status, page = 1, limit = 30 } = req.query;
+    // SECURITY: Sanitize query parameters to prevent NoSQL injection
+    const search = sanitizeString(req.query.search);
+    const role = sanitizeString(req.query.role, ['user', 'staff', 'faculty', 'admin']);
+    const status = sanitizeString(req.query.status, ['active', 'suspended', 'deactivated']);
+    const page = sanitizeNumber(req.query.page, { min: 1, default: 1 });
+    const limit = sanitizeNumber(req.query.limit, { min: 1, max: 100, default: 30 });
+
     const filter = {};
 
     if (role) filter.role = role;
     if (status) filter.status = status;
     if (search) {
+      // Sanitize search string to prevent ReDoS attacks
+      const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { department: { $regex: search, $options: 'i' } }
+        { name: { $regex: sanitizedSearch, $options: 'i' } },
+        { email: { $regex: sanitizedSearch, $options: 'i' } },
+        { department: { $regex: sanitizedSearch, $options: 'i' } }
       ];
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
       User.find(filter)
         .select('-password')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(limit),
       User.countDocuments(filter)
     ]);
 
@@ -47,8 +56,8 @@ const getUsers = async (req, res) => {
     res.json({
       users: usersWithStats,
       total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / parseInt(limit))
+      page,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

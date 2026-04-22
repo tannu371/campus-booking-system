@@ -7,6 +7,13 @@ const { startAutoReleaseWorker } = require('./utils/autoReleaseWorker');
 
 dotenv.config();
 
+// Security: Fail fast if JWT_SECRET is not configured
+if (!process.env.JWT_SECRET) {
+  console.error('❌ FATAL: JWT_SECRET environment variable is required');
+  console.error('   Set JWT_SECRET in your .env file to a strong random value');
+  process.exit(1);
+}
+
 const app = express();
 
 // Connect to MongoDB and auto-seed if empty
@@ -14,7 +21,29 @@ const startDB = async () => {
   await connectDB();
 
   const autoSeedOnEmpty = process.env.AUTO_SEED_ON_EMPTY === 'true';
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   if (autoSeedOnEmpty) {
+    // SECURITY: Prevent auto-seeding in production with default passwords
+    if (isProduction) {
+      const hasCustomPasswords = 
+        process.env.SEED_ADMIN_PASSWORD && 
+        process.env.SEED_FACULTY_PASSWORD && 
+        process.env.SEED_USER_PASSWORD && 
+        process.env.SEED_STAFF_PASSWORD &&
+        !process.env.SEED_ADMIN_PASSWORD.includes('CHANGE_ME') &&
+        !process.env.SEED_FACULTY_PASSWORD.includes('CHANGE_ME') &&
+        !process.env.SEED_USER_PASSWORD.includes('CHANGE_ME') &&
+        !process.env.SEED_STAFF_PASSWORD.includes('CHANGE_ME');
+
+      if (!hasCustomPasswords) {
+        console.error('❌ FATAL: Cannot auto-seed in production without custom SEED_*_PASSWORD variables');
+        console.error('   Set SEED_ADMIN_PASSWORD, SEED_FACULTY_PASSWORD, SEED_USER_PASSWORD, SEED_STAFF_PASSWORD');
+        console.error('   Or set AUTO_SEED_ON_EMPTY=false for production');
+        process.exit(1);
+      }
+    }
+
     const User = require('./models/User');
     const userCount = await User.countDocuments();
     if (userCount === 0) {

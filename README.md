@@ -23,12 +23,13 @@ A production-grade web application for booking campus facilities — classrooms,
 - 📋 **Audit Log** — Complete system action history with expandable JSON details
 
 ### System Integrity
-- ⚡ Atomic conflict detection with configurable buffer times between bookings
+- ⚡ **Atomic conflict detection** with MongoDB transactions and unique indexes (multi-instance safe)
 - 🔁 Approval-room conflict policy: multiple `pending` requests can coexist; only `approved` blocks slot
 - 🛡️ Booking validation: time order, duration limits, operating hours, capacity, advance window
 - 📝 Non-blocking audit logging for every system action (19 action types)
 - 🔄 Alternative room suggestions when a conflict is detected
 - 🔒 Role-based booking limits (admin: 50, faculty: 20, staff: 10, student: 5)
+- 🏗️ **Production-ready:** Horizontal scaling support (PM2 cluster, Kubernetes replicas)
 
 ## 🛠 Tech Stack
 
@@ -136,6 +137,24 @@ Then start the MongoDB service as above.
    ```bash
    cd backend
    npm install
+   ```
+
+   **⚠️ SECURITY: Configure secrets before starting**
+   
+   Copy the example environment file and configure your secrets:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   **Required:** Generate a secure JWT secret:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   ```
+   
+   Update `.env` with your generated JWT_SECRET. See [SECURITY.md](backend/SECURITY.md) for complete security configuration guide.
+
+   Start the server:
+   ```bash
    npm run dev
    ```
    The server starts on port **5001**.
@@ -170,10 +189,12 @@ These accounts are available **after seeding** (either auto-seed on empty DB, or
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@campus.edu` | `admin123` |
-| Faculty | `sarah@campus.edu` | `faculty123` |
-| Student | `john@campus.edu` | `user123` |
-| Staff | `carol@campus.edu` | `staff123` |
+| Admin | `admin@campus.edu` | Configured via `SEED_ADMIN_PASSWORD` |
+| Faculty | `sarah@campus.edu` | Configured via `SEED_FACULTY_PASSWORD` |
+| Student | `john@campus.edu` | Configured via `SEED_USER_PASSWORD` |
+| Staff | `carol@campus.edu` | Configured via `SEED_STAFF_PASSWORD` |
+
+**Note:** Default development passwords are set in `.env`. For production, see [SECURITY.md](backend/SECURITY.md).
 
 ## 📡 API Endpoints
 
@@ -295,6 +316,39 @@ Backend environment flags in `backend/.env`:
 - `ALLOW_IN_MEMORY_DB=false` — keep `false` for persistence; set `true` only for ephemeral demo/testing
 
 If `ALLOW_IN_MEMORY_DB` is enabled, data is not persistent across restarts.
+
+## 🔒 Security
+
+This application implements multiple security measures:
+
+- ✅ **JWT Authentication** - Required JWT_SECRET, server fails at boot if not configured
+- ✅ **Password Hashing** - bcrypt with salt rounds
+- ✅ **Environment-based Secrets** - Seed passwords configurable via environment variables
+- ✅ **Role-based Access Control** - Admin, faculty, staff, and user roles with different permissions
+- ✅ **Audit Logging** - Complete action history for security monitoring
+- ✅ **Input Validation** - Request validation and sanitization
+
+**Important:** See [SECURITY.md](backend/SECURITY.md) for:
+- JWT secret configuration requirements
+- Seed password security best practices
+- Production deployment checklist
+- Security incident response procedures
+
+## 🏗️ Concurrency & Multi-Instance Safety
+
+The booking system uses **MongoDB transactions and partial unique indexes** to prevent double-booking across multiple server instances:
+
+- ✅ **Atomic conflict detection** - Works in PM2 cluster mode, Kubernetes replicas, load-balanced setups
+- ✅ **Database-level enforcement** - Unique index on `{ room, date, startTime }` for active bookings
+- ✅ **Transaction support** - MongoDB sessions ensure atomicity and isolation
+- ✅ **Graceful error handling** - Returns 409 with alternative rooms on concurrent conflicts
+
+**Important:** See [CONCURRENCY.md](backend/CONCURRENCY.md) for:
+- How multi-instance safety works
+- MongoDB replica set requirements
+- Load testing procedures
+- Performance considerations
+- Migration guide for existing deployments
 
 ## 📄 License
 

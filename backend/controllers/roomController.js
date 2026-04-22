@@ -1,22 +1,34 @@
 const Room = require('../models/Room');
 const Booking = require('../models/Booking');
 const { logAudit } = require('../utils/auditLogger');
+const { sanitizeString, sanitizeNumber } = require('../utils/sanitizeQuery');
 
-// @desc    Get all rooms
+// @desc    Get all rooms - with NoSQL injection protection
 // @route   GET /api/rooms
 const getRooms = async (req, res) => {
   try {
-    const { type, capacity, building, search } = req.query;
+    // SECURITY: Sanitize query parameters to prevent NoSQL injection
+    const type = sanitizeString(req.query.type, ['classroom', 'lab', 'seminar_hall', 'conference_room', 'meeting_room']);
+    const capacity = sanitizeNumber(req.query.capacity, { min: 1 });
+    const building = sanitizeString(req.query.building);
+    const search = sanitizeString(req.query.search);
+    
     const filter = { isActive: true };
 
     if (type) filter.type = type;
-    if (building) filter.building = { $regex: building, $options: 'i' };
-    if (capacity) filter.capacity = { $gte: parseInt(capacity) };
+    if (building) {
+      // Sanitize regex input to prevent ReDoS
+      const sanitizedBuilding = building.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.building = { $regex: sanitizedBuilding, $options: 'i' };
+    }
+    if (capacity) filter.capacity = { $gte: capacity };
     if (search) {
+      // Sanitize regex input to prevent ReDoS
+      const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { building: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { name: { $regex: sanitizedSearch, $options: 'i' } },
+        { building: { $regex: sanitizedSearch, $options: 'i' } },
+        { description: { $regex: sanitizedSearch, $options: 'i' } }
       ];
     }
 
@@ -115,11 +127,33 @@ const getRoomUtilization = async (req, res) => {
   }
 };
 
-// @desc    Create a room (admin)
+// @desc    Create a room (admin) - with field whitelisting
 // @route   POST /api/rooms
 const createRoom = async (req, res) => {
   try {
-    const room = await Room.create(req.body);
+    // SECURITY: Whitelist fields for room creation
+    const allowedFields = [
+      'name', 'type', 'capacity', 'building', 'floor', 'amenities',
+      'description', 'isAvailable', 'operatingHoursStart', 'operatingHoursEnd',
+      'bufferMinutes', 'requiresApproval', 'internalNotes'
+    ];
+    
+    const roomData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        roomData[field] = req.body[field];
+      }
+    });
+
+    // Validate required fields
+    if (!roomData.name || !roomData.type || !roomData.capacity || !roomData.building) {
+      return res.status(400).json({
+        message: 'Missing required fields',
+        required: ['name', 'type', 'capacity', 'building']
+      });
+    }
+
+    const room = await Room.create(roomData);
 
     await logAudit('ROOM_CREATED', {
       performedBy: req.user._id,
@@ -135,7 +169,7 @@ const createRoom = async (req, res) => {
   }
 };
 
-// @desc    Update a room (admin)
+// @desc    Update a room (admin) - with field whitelisting
 // @route   PUT /api/rooms/:id
 const updateRoom = async (req, res) => {
   try {
@@ -144,20 +178,53 @@ const updateRoom = async (req, res) => {
       return res.status(404).json({ message: 'Room not found' });
     }
 
-    const room = await Room.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
+    // SECURITY: Whitelist mutable fields to prevent mass-assignment
+    const allowedFields = [
+      'name', 'type', 'capacity', 'building', 'floor', 'amenities',
+      'description', 'isAvailable', 'operatingHoursStart', 'operatingHoursEnd',
+      'bufferMinutes', 'requiresApproval', 'internalNotes'
+    ];
+    
+    const updates = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
     });
+
+    // Reject if trying to update protected fields
+    const protectedFields = ['isActive', '_id', 'createdAt', 'updatedAt'];
+    const attemptedProtectedFields = protectedFields.filter(field => req.body[field] !== undefined);
+    
+    if (attemptedProtectedFields.length > 0) {
+      return res.status(400).json({
+        message: 'Cannot update protected fields',
+        error: 'PROTECTED_FIELDS',
+        attemptedFields: attemptedProtectedFields,
+        hint: 'Use DELETE endpoint to deactivate rooms'
+      });
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        message: 'No valid fields to update',
+        allowedFields
+      });
+    }
+
+    // Apply updates
+    Object.assign(before, updates);
+    await before.save();
 
     await logAudit('ROOM_UPDATED', {
       performedBy: req.user._id,
       targetType: 'room',
-      targetId: room._id,
-      details: { changes: req.body },
+      targetId: before._id,
+      details: { changes: updates },
       ipAddress: req.clientIp
     });
 
-    res.json(room);
+    res.json(before);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

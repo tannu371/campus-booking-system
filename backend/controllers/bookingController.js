@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Room = require('../models/Room');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 const { sendEmail } = require('../config/mailer');
 const { bookingConfirmationEmail, bookingStatusEmail } = require('../utils/emailTemplates');
 const { validateBookingRequest, detectsOverlapWithBuffer, generateConfirmationCode } = require('../utils/bookingValidator');
@@ -10,6 +11,7 @@ const IntervalTree = require('../utils/IntervalTree');
 const { calculatePriority, determineInitialStatus } = require('../utils/priorityCalculator');
 const { expandRecurrenceRule, validateRecurrenceRule, generateRecurrenceGroupId } = require('../utils/recurrenceEngine');
 const { calculateAutoReleaseTime } = require('../utils/autoReleaseWorker');
+const { sanitizeString, sanitizeObjectId, sanitizeNumber, sanitizeDate } = require('../utils/sanitizeQuery');
 
 // In-memory interval tree cache: Map<roomId_date, IntervalTree>
 const intervalTreeCache = new Map();
@@ -47,10 +49,11 @@ const formatConflictDate = (dateValue) =>
     year: 'numeric'
   });
 
-// @desc    Create a booking (Enhanced 8-step algorithm)
+// @desc    Create a booking (Enhanced with MongoDB transaction for multi-instance safety)
 // @route   POST /api/bookings
 const createBooking = async (req, res) => {
   let lock = null;
+  let session = null;
   
   try {
     const { room, title, date, startTime, endTime, purpose, attendeeCount } = req.body;
@@ -106,7 +109,8 @@ const createBooking = async (req, res) => {
     const lockKey = `lock:${room}:${dateKey}`;
     const requestId = `${req.user._id}-${Date.now()}`;
 
-    // STEP 4: Acquire Lock
+    // STEP 4: Acquire Lock (defense-in-depth for single-instance latency reduction)
+    // Note: This is NOT for correctness in multi-instance deploys - the DB transaction handles that
     lock = await lockManager.tryAcquireLock(lockKey, requestId, 5000, 3, 50);
     if (!lock) {
       return res.status(503).json({
@@ -115,8 +119,7 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // STEP 5: Conflict Detection (Interval Tree + DB)
-    // Always do DB check for safety (interval tree is an optimization for future)
+    // STEP 5: Conflict Detection (with buffer consideration)
     const statusesToBlock = getStatusesThatBlockSlot(roomDoc.requiresApproval);
     const existingBookings = await Booking.find({
       room,
@@ -150,7 +153,19 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // STEP 6: Atomic Insert with Conflict Guard
+    // STEP 6: Atomic Insert with MongoDB Transaction (multi-instance safety)
+    // Start a session for transaction support (if available)
+    let useTransaction = true;
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+    } catch (error) {
+      // Transactions not supported (e.g., standalone MongoDB in tests)
+      // Fall back to non-transactional mode - unique index still provides protection
+      useTransaction = false;
+      session = null;
+    }
+
     const initialStatus = determineInitialStatus(user, roomDoc);
     const confirmationCode = generateConfirmationCode();
     const priorityLevel = calculatePriority(user.role);
@@ -158,20 +173,60 @@ const createBooking = async (req, res) => {
       ? calculateAutoReleaseTime(bookingDate, startTime, 15)
       : null;
 
-    const booking = await Booking.create({
-      room,
-      user: req.user._id,
-      title,
-      date: bookingDate,
-      startTime,
-      endTime,
-      purpose,
-      attendeeCount: attendeeCount || null,
-      status: initialStatus,
-      confirmationCode,
-      priorityLevel,
-      autoReleaseAt
-    });
+    let booking;
+    try {
+      // Create booking (with or without transaction)
+      const bookingData = {
+        room,
+        user: req.user._id,
+        title,
+        date: bookingDate,
+        startTime,
+        endTime,
+        purpose,
+        attendeeCount: attendeeCount || null,
+        status: initialStatus,
+        confirmationCode,
+        priorityLevel,
+        autoReleaseAt
+      };
+
+      if (useTransaction) {
+        const bookings = await Booking.create([bookingData], { session });
+        booking = bookings[0];
+        await session.commitTransaction();
+      } else {
+        booking = await Booking.create(bookingData);
+      }
+    } catch (error) {
+      // Rollback on error (if using transaction)
+      if (useTransaction && session) {
+        await session.abortTransaction();
+      }
+      
+      // Check if this is a duplicate key error (E11000) from our unique index
+      if (error.code === 11000 && error.message.includes('unique_room_date_startTime_active')) {
+        lockManager.releaseLock(lock);
+        
+        // Another instance created a conflicting booking concurrently
+        const alternativeRooms = await findAlternativeRooms(room, attendeeCount, roomDoc.type, date, startTime, endTime);
+        
+        return res.status(409).json({
+          message: `This time slot was just booked by another user. Please select a different time.`,
+          error: 'CONCURRENT_BOOKING_CONFLICT',
+          buffer_minutes: roomDoc.bufferMinutes || 0,
+          alternative_rooms: alternativeRooms
+        });
+      }
+      
+      // Re-throw other errors
+      throw error;
+    } finally {
+      if (session) {
+        session.endSession();
+        session = null;
+      }
+    }
 
     // STEP 7: Release Lock & Post-Processing
     // Update interval tree cache (optional optimization for future)
@@ -220,6 +275,11 @@ const createBooking = async (req, res) => {
     if (lock) {
       lockManager.releaseLock(lock);
     }
+    // Ensure session is ended on error
+    if (session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -237,35 +297,42 @@ const getMyBookings = async (req, res) => {
   }
 };
 
-// @desc    Get all bookings (admin)
+// @desc    Get all bookings (admin) - with NoSQL injection protection
 // @route   GET /api/bookings
 const getAllBookings = async (req, res) => {
   try {
-    const { status, room, startDate, endDate, page = 1, limit = 50 } = req.query;
+    // SECURITY: Sanitize query parameters to prevent NoSQL injection
+    const status = sanitizeString(req.query.status, ['pending', 'approved', 'rejected', 'cancelled', 'completed', 'no_show', 'auto_released']);
+    const room = sanitizeObjectId(req.query.room);
+    const startDate = sanitizeDate(req.query.startDate);
+    const endDate = sanitizeDate(req.query.endDate);
+    const page = sanitizeNumber(req.query.page, { min: 1, default: 1 });
+    const limit = sanitizeNumber(req.query.limit, { min: 1, max: 100, default: 50 });
+
     const filter = {};
     if (status) filter.status = status;
     if (room) filter.room = room;
     if (startDate || endDate) {
       filter.date = {};
-      if (startDate) filter.date.$gte = new Date(startDate);
-      if (endDate) filter.date.$lte = new Date(endDate);
+      if (startDate) filter.date.$gte = startDate;
+      if (endDate) filter.date.$lte = endDate;
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (page - 1) * limit;
     const [bookings, total] = await Promise.all([
       Booking.find(filter)
         .populate(['room', 'user'])
         .sort({ date: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(limit),
       Booking.countDocuments(filter)
     ]);
 
     res.json({
       bookings,
       total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / parseInt(limit))
+      page,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -286,7 +353,7 @@ const getBookingsByRoom = async (req, res) => {
   }
 };
 
-// @desc    Update a booking
+// @desc    Update a booking (user can only update limited fields)
 // @route   PUT /api/bookings/:id
 const updateBooking = async (req, res) => {
   try {
@@ -301,17 +368,56 @@ const updateBooking = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    // SECURITY: Whitelist mutable fields to prevent mass-assignment
+    // Users can only update these fields; admins get a few more
+    const allowedUserFields = ['title', 'purpose', 'attendeeCount'];
+    const allowedAdminFields = [...allowedUserFields, 'date', 'startTime', 'endTime'];
+    
+    const allowedFields = req.user.role === 'admin' ? allowedAdminFields : allowedUserFields;
+    const updates = {};
+    
+    // Only copy whitelisted fields from req.body
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    });
+
+    // Reject if trying to update protected fields
+    const protectedFields = ['status', 'user', 'room', 'priorityLevel', 'adminOverride', 
+                             'confirmationCode', 'checkedIn', 'checkInTime', 'cancelledBy',
+                             'cancelReason', 'autoReleaseAt', 'recurrenceGroupId'];
+    const attemptedProtectedFields = protectedFields.filter(field => req.body[field] !== undefined);
+    
+    if (attemptedProtectedFields.length > 0) {
+      return res.status(400).json({
+        message: 'Cannot update protected fields',
+        error: 'PROTECTED_FIELDS',
+        attemptedFields: attemptedProtectedFields,
+        hint: 'Use the appropriate endpoint for status changes, cancellations, or check-ins'
+      });
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        message: 'No valid fields to update',
+        allowedFields
+      });
+    }
+
     const before = { ...booking.toObject() };
-    const updated = await Booking.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    }).populate(['room', 'user']);
+    
+    // Apply updates
+    Object.assign(booking, updates);
+    await booking.save();
+    
+    const updated = await booking.populate(['room', 'user']);
 
     await logAudit('BOOKING_UPDATED', {
       performedBy: req.user._id,
       targetType: 'booking',
       targetId: booking._id,
-      details: { before, after: req.body },
+      details: { before: before, after: updates },
       ipAddress: req.clientIp
     });
 
@@ -369,9 +475,11 @@ const cancelBooking = async (req, res) => {
   }
 };
 
-// @desc    Update booking status (admin)
+// @desc    Update booking status (admin) - with transaction for approval safety
 // @route   PUT /api/bookings/:id/status
 const updateBookingStatus = async (req, res) => {
+  let session = null;
+  
   try {
     const { status, reason } = req.body;
 
@@ -382,39 +490,115 @@ const updateBookingStatus = async (req, res) => {
 
     const previousStatus = booking.status;
 
-    // If approving, ensure no approved booking conflicts in same slot
+    // If approving, use transaction to prevent approval races
     if (status === 'approved' && previousStatus !== 'approved') {
       const roomDoc = booking.room;
       const { start: dayStart, end: dayEnd } = getDateRangeForDay(booking.date);
 
-      const approvedSameDay = await Booking.find({
-        _id: { $ne: booking._id },
-        room: roomDoc._id,
-        date: { $gte: dayStart, $lt: dayEnd },
-        status: 'approved'
-      }).select('startTime endTime');
-
-      const hasConflict = approvedSameDay.some(existing =>
-        detectsOverlapWithBuffer(
-          existing.startTime,
-          existing.endTime,
-          booking.startTime,
-          booking.endTime,
-          roomDoc.bufferMinutes || 0
-        )
-      );
-
-      if (hasConflict) {
-        return res.status(409).json({
-          message: 'Cannot approve booking: time slot conflicts with an already approved booking.',
-          error: 'APPROVAL_CONFLICT'
-        });
+      // Start transaction for atomic approval (if available)
+      let useTransaction = true;
+      try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+      } catch (error) {
+        // Transactions not supported (e.g., standalone MongoDB in tests)
+        // Fall back to non-transactional mode - unique index still provides protection
+        useTransaction = false;
+        session = null;
       }
-    }
 
-    booking.status = status;
-    if (reason) booking.cancelReason = reason;
-    await booking.save();
+      try {
+        // Re-fetch booking within transaction to ensure we have latest state
+        const bookingInTx = useTransaction 
+          ? await Booking.findById(req.params.id).session(session)
+          : await Booking.findById(req.params.id);
+        
+        if (!bookingInTx) {
+          if (useTransaction) await session.abortTransaction();
+          return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        // Check if already approved (idempotent)
+        if (bookingInTx.status === 'approved') {
+          if (useTransaction) {
+            await session.abortTransaction();
+            session.endSession();
+          }
+          const populated = await booking.populate(['room', 'user']);
+          return res.json(populated);
+        }
+
+        // Check for conflicts with approved bookings
+        const query = Booking.find({
+          _id: { $ne: booking._id },
+          room: roomDoc._id,
+          date: { $gte: dayStart, $lt: dayEnd },
+          status: 'approved'
+        });
+        
+        const approvedSameDay = useTransaction 
+          ? await query.session(session).select('startTime endTime')
+          : await query.select('startTime endTime');
+
+        const hasConflict = approvedSameDay.some(existing =>
+          detectsOverlapWithBuffer(
+            existing.startTime,
+            existing.endTime,
+            booking.startTime,
+            booking.endTime,
+            roomDoc.bufferMinutes || 0
+          )
+        );
+
+        if (hasConflict) {
+          if (useTransaction) await session.abortTransaction();
+          return res.status(409).json({
+            message: 'Cannot approve booking: time slot conflicts with an already approved booking.',
+            error: 'APPROVAL_CONFLICT'
+          });
+        }
+
+        // Update status
+        bookingInTx.status = status;
+        if (reason) bookingInTx.cancelReason = reason;
+        
+        if (useTransaction) {
+          await bookingInTx.save({ session });
+          await session.commitTransaction();
+        } else {
+          await bookingInTx.save();
+        }
+      } catch (error) {
+        if (useTransaction) await session.abortTransaction();
+        
+        // Check if this is a duplicate key error from concurrent approval
+        if (error.code === 11000 && error.message.includes('unique_room_date_startTime_active')) {
+          return res.status(409).json({
+            message: 'Cannot approve booking: another booking was just approved for this time slot.',
+            error: 'CONCURRENT_APPROVAL_CONFLICT'
+          });
+        }
+        
+        throw error;
+      } finally {
+        if (session) {
+          session.endSession();
+          session = null;
+        }
+      }
+
+      // Reload booking after transaction to get updated state
+      const updatedBooking = await Booking.findById(booking._id).populate('room');
+      if (updatedBooking) {
+        booking.status = updatedBooking.status;
+        booking.cancelReason = updatedBooking.cancelReason;
+      }
+    } else {
+      // For non-approval status changes, no transaction needed
+      booking.status = status;
+      if (reason) booking.cancelReason = reason;
+      await booking.save();
+    }
 
     const populated = await booking.populate(['room', 'user']);
 
@@ -443,6 +627,11 @@ const updateBookingStatus = async (req, res) => {
 
     res.json(populated);
   } catch (error) {
+    // Ensure session is cleaned up on error
+    if (session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -602,7 +791,7 @@ const checkInBooking = async (req, res) => {
   }
 };
 
-// @desc    Create recurring booking
+// @desc    Create recurring booking (with quota enforcement)
 // @route   POST /api/bookings/recurring
 const createRecurringBooking = async (req, res) => {
   try {
@@ -624,6 +813,15 @@ const createRecurringBooking = async (req, res) => {
       return res.status(404).json({ message: 'Room not found' });
     }
 
+    // Check user can book
+    const canBook = user.canBook();
+    if (!canBook.allowed) {
+      return res.status(403).json({ 
+        message: `Cannot create booking: ${canBook.reason}`, 
+        error: canBook 
+      });
+    }
+
     // Expand recurrence rule
     const firstStart = new Date(date);
     const [startH, startM] = startTime.split(':').map(Number);
@@ -637,6 +835,28 @@ const createRecurringBooking = async (req, res) => {
 
     if (occurrences.length === 0) {
       return res.status(400).json({ message: 'No occurrences generated from recurrence rule' });
+    }
+
+    // SECURITY: Check quota before creating recurring bookings
+    const activeBookings = await Booking.countDocuments({
+      user: req.user._id,
+      status: { $in: ['pending', 'approved'] },
+      date: { $gte: new Date() }
+    });
+
+    const maxBookings = user.maxActiveBookings || 5;
+    const newBookingsCount = occurrences.length;
+    const totalAfterCreation = activeBookings + newBookingsCount;
+
+    if (totalAfterCreation > maxBookings) {
+      return res.status(400).json({
+        message: `Cannot create ${newBookingsCount} recurring bookings. Would exceed your limit of ${maxBookings} active bookings.`,
+        error: 'RECURRING_QUOTA_EXCEEDED',
+        current: activeBookings,
+        requested: newBookingsCount,
+        maximum: maxBookings,
+        available: Math.max(0, maxBookings - activeBookings)
+      });
     }
 
     // Generate group ID

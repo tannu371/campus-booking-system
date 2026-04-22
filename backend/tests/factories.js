@@ -69,7 +69,7 @@ const createTestBookingRequest = (roomId, overrides = {}) => {
 
 const getAuthToken = async (user) => {
   const jwt = require('jsonwebtoken');
-  return jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'campus_booking_secret', { expiresIn: '30d' });
+  return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 module.exports = {

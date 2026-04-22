@@ -5,7 +5,7 @@ const { welcomeEmail } = require('../utils/emailTemplates');
 const { logAudit } = require('../utils/auditLogger');
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'campus_booking_secret', {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d'
   });
 };

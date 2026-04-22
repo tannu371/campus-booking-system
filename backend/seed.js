@@ -23,6 +23,18 @@ const seed = async () => {
       console.log('Connected to in-memory MongoDB');
     }
 
+    // Get passwords from environment or use INSECURE defaults for dev
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'CHANGE_ME_admin123';
+    const facultyPassword = process.env.SEED_FACULTY_PASSWORD || 'CHANGE_ME_faculty123';
+    const userPassword = process.env.SEED_USER_PASSWORD || 'CHANGE_ME_user123';
+    const staffPassword = process.env.SEED_STAFF_PASSWORD || 'CHANGE_ME_staff123';
+
+    // Warn if using default passwords
+    if (!process.env.SEED_ADMIN_PASSWORD || !process.env.SEED_FACULTY_PASSWORD || 
+        !process.env.SEED_USER_PASSWORD || !process.env.SEED_STAFF_PASSWORD) {
+      console.warn('⚠️  WARNING: Using default seed passwords. Set SEED_*_PASSWORD in .env for production!');
+    }
+
     // Clear existing data
     await User.deleteMany({});
     await Room.deleteMany({});
@@ -34,7 +46,7 @@ const seed = async () => {
     const admin = await User.create({
       name: 'Admin User',
       email: 'admin@campus.edu',
-      password: 'admin123',
+      password: adminPassword,
       role: 'admin',
       department: 'Administration',
       maxActiveBookings: 50,
@@ -45,7 +57,7 @@ const seed = async () => {
     const faculty = await User.create({
       name: 'Dr. Sarah Chen',
       email: 'sarah@campus.edu',
-      password: 'faculty123',
+      password: facultyPassword,
       role: 'faculty',
       department: 'Computer Science',
       maxActiveBookings: 20,
@@ -56,7 +68,7 @@ const seed = async () => {
     const user1 = await User.create({
       name: 'John Student',
       email: 'john@campus.edu',
-      password: 'user123',
+      password: userPassword,
       role: 'user',
       department: 'Computer Science',
       status: 'active'
@@ -65,7 +77,7 @@ const seed = async () => {
     const user2 = await User.create({
       name: 'Alice Johnson',
       email: 'alice@campus.edu',
-      password: 'user123',
+      password: userPassword,
       role: 'user',
       department: 'Electronics',
       status: 'active'
@@ -74,7 +86,7 @@ const seed = async () => {
     const user3 = await User.create({
       name: 'Bob Smith',
       email: 'bob@campus.edu',
-      password: 'user123',
+      password: userPassword,
       role: 'user',
       department: 'Mechanical Engineering',
       status: 'active'
@@ -83,20 +95,14 @@ const seed = async () => {
     const staff1 = await User.create({
       name: 'Carol Lee',
       email: 'carol@campus.edu',
-      password: 'staff123',
+      password: staffPassword,
       role: 'staff',
       department: 'Library',
       maxActiveBookings: 10,
       status: 'active'
     });
 
-    console.log('Created users:');
-    console.log('  Admin:   admin@campus.edu / admin123');
-    console.log('  Faculty: sarah@campus.edu / faculty123');
-    console.log('  User:    john@campus.edu / user123');
-    console.log('  User:    alice@campus.edu / user123');
-    console.log('  User:    bob@campus.edu / user123');
-    console.log('  Staff:   carol@campus.edu / staff123');
+    console.log('Created 6 users (passwords configured via environment variables)');
 
     // Create rooms
     const rooms = await Room.insertMany([
@@ -442,11 +448,12 @@ const seed = async () => {
 
     console.log('Created sample audit logs');
     console.log('\n✅ Seed complete!');
-    console.log('\n📋 Login credentials:');
-    console.log('  Admin:   admin@campus.edu / admin123');
-    console.log('  Faculty: sarah@campus.edu / faculty123');
-    console.log('  Users:   john@campus.edu, alice@campus.edu, bob@campus.edu / user123');
-    console.log('  Staff:   carol@campus.edu / staff123');
+    console.log('\n📋 Seed accounts created:');
+    console.log('  admin@campus.edu (admin)');
+    console.log('  sarah@campus.edu (faculty)');
+    console.log('  john@campus.edu, alice@campus.edu, bob@campus.edu (users)');
+    console.log('  carol@campus.edu (staff)');
+    console.log('\n🔐 Passwords: Set via SEED_*_PASSWORD environment variables');
 
     process.exit(0);
   } catch (error) {
