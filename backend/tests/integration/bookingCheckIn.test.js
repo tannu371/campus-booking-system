@@ -53,8 +53,10 @@ describe('PUT /api/bookings/:id/checkin — Check-In', () => {
   test('17.1: Valid check-in for today\'s approved booking', async () => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.max(0, now.getMinutes() - 1)).padStart(2, '0')}`;
-    const endTime = `${String((now.getHours() + 1) % 24).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    // Create a booking that started 1 hour ago and ends 1 hour from now (in UTC)
+    const currentUTCHour = now.getUTCHours();
+    const startTime = `${String(Math.max(0, currentUTCHour - 1)).padStart(2, '0')}:00`;
+    const endTime = `${String(Math.min(23, currentUTCHour + 1)).padStart(2, '0')}:59`;
     const booking = await Booking.create({
       room: room._id, user: userA._id, title: 'Today Meeting',
       date: today, startTime, endTime,
@@ -126,10 +128,14 @@ describe('PUT /api/bookings/:id/checkin — Check-In', () => {
   test('Double check-in is idempotent', async () => {
     // NOTE: testing.md says double check-in should fail.
     // Current implementation allows it idempotently.
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const currentUTCHour = now.getUTCHours();
+    const startTime = `${String(Math.max(0, currentUTCHour - 1)).padStart(2, '0')}:00`;
+    const endTime = `${String(Math.min(23, currentUTCHour + 1)).padStart(2, '0')}:59`;
     const booking = await Booking.create({
       room: room._id, user: userA._id, title: 'Already Checked',
-      date: today, startTime: '09:00', endTime: '11:00',
+      date: today, startTime, endTime,
       status: 'approved', checkedIn: true, checkInTime: new Date(),
       confirmationCode: 'BK-2026-CK05'
     });

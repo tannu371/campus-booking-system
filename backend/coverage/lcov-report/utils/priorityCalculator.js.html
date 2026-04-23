@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for controllers/auditController.js</title>
+    <title>Code coverage report for utils/priorityCalculator.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">controllers</a> auditController.js</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">utils</a> priorityCalculator.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/40</span>
+                <span class='fraction'>21/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">85.71% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>12/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/35</span>
+                <span class='fraction'>21/21</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -141,35 +141,29 @@
 <a name='L76'></a><a href='#L76'>76</a>
 <a name='L77'></a><a href='#L77'>77</a>
 <a name='L78'></a><a href='#L78'>78</a>
-<a name='L79'></a><a href='#L79'>79</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,125 +172,179 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">56x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const AuditLog = <span class="cstat-no" title="statement not covered" >require('../models/AuditLog');</span>
-const { sanitizeString, sanitizeObjectId, sanitizeNumber, sanitizeDate } = <span class="cstat-no" title="statement not covered" >require('../utils/sanitizeQuery');</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+ * Priority Calculator
+ * Determines booking priority based on user role
+ * Lower number = higher priority
+ */
 &nbsp;
-// @desc    Get audit logs (admin) - with NoSQL injection protection
-// @route   GET /api/audit
-const getAuditLogs = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    // SECURITY: Sanitize query parameters to prevent NoSQL injection
-    const action = <span class="cstat-no" title="statement not covered" >sanitizeString(req.query.action);</span>
-    const targetType = <span class="cstat-no" title="statement not covered" >sanitizeString(req.query.targetType, ['booking', 'room', 'user']);</span>
-    const performedBy = <span class="cstat-no" title="statement not covered" >sanitizeObjectId(req.query.performedBy);</span>
-    const startDate = <span class="cstat-no" title="statement not covered" >sanitizeDate(req.query.startDate);</span>
-    const endDate = <span class="cstat-no" title="statement not covered" >sanitizeDate(req.query.endDate);</span>
-    const page = <span class="cstat-no" title="statement not covered" >sanitizeNumber(req.query.page, { min: 1, default: 1 });</span>
-    const limit = <span class="cstat-no" title="statement not covered" >sanitizeNumber(req.query.limit, { min: 1, max: 100, default: 30 });</span>
-&nbsp;
-    const filter = <span class="cstat-no" title="statement not covered" >{};</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    if (action) <span class="cstat-no" title="statement not covered" >filter.action = action;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (targetType) <span class="cstat-no" title="statement not covered" >filter.targetType = targetType;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (performedBy) <span class="cstat-no" title="statement not covered" >filter.performedBy = performedBy;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (startDate || endDate) {</span>
-<span class="cstat-no" title="statement not covered" >      filter.createdAt = {};</span>
-<span class="cstat-no" title="statement not covered" >      if (startDate) <span class="cstat-no" title="statement not covered" >filter.createdAt.$gte = startDate;</span></span>
-<span class="cstat-no" title="statement not covered" >      if (endDate) <span class="cstat-no" title="statement not covered" >filter.createdAt.$lte = endDate;</span></span>
-    }
-&nbsp;
-    const skip = <span class="cstat-no" title="statement not covered" >(page - 1) * limit;</span>
-    const [logs, total] = <span class="cstat-no" title="statement not covered" >await Promise.all([</span>
-      AuditLog.find(filter)
-        .populate('performedBy', 'name email role')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      AuditLog.countDocuments(filter)
-    ]);
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    res.json({</span>
-      logs,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    });
-  } catch (error) {
-<span class="cstat-no" title="statement not covered" >    res.status(500).json({ message: error.message });</span>
-  }
+const PRIORITY_LEVELS = {
+  admin: 1,
+  faculty: 2,
+  staff: 3,
+  user: 4,
+  guest: 5
 };
 &nbsp;
-// @desc    Get recent activity feed (admin) - with NoSQL injection protection
-// @route   GET /api/audit/recent
-const getRecentActivity = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    // SECURITY: Sanitize limit parameter
-    const limit = <span class="cstat-no" title="statement not covered" >sanitizeNumber(req.query.limit, { min: 1, max: 50, default: 10 });</span>
-    
-    const logs = <span class="cstat-no" title="statement not covered" >await AuditLog.find()</span>
-      .populate('performedBy', 'name email role')
-      .sort({ createdAt: -1 })
-      .limit(limit);
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    res.json(logs);</span>
-  } catch (error) {
-<span class="cstat-no" title="statement not covered" >    res.status(500).json({ message: error.message });</span>
-  }
+/**
+ * Calculate priority level from user role
+ * @param {string} role - User role
+ * @returns {number} Priority level (1-5, lower is higher priority)
+ */
+const calculatePriority = (role) =&gt; {
+  return PRIORITY_LEVELS[role] || PRIORITY_LEVELS.user;
 };
 &nbsp;
-// @desc    Get available action types (for filter dropdown)
-// @route   GET /api/audit/actions
-const getActionTypes = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const actions = <span class="cstat-no" title="statement not covered" >await AuditLog.distinct('action');</span>
-<span class="cstat-no" title="statement not covered" >    res.json(actions.sort());</span>
-  } catch (error) {
-<span class="cstat-no" title="statement not covered" >    res.status(500).json({ message: error.message });</span>
+/**
+ * Determine initial booking status based on user and room
+ * @param {Object} user - User object with role
+ * @param {Object} room - Room object with requiresApproval flag
+ * @returns {string} 'pending' or 'approved'
+ */
+const determineInitialStatus = (user, room) =&gt; {
+  // Room requires approval
+  if (room.requiresApproval) {
+    return 'pending';
   }
+&nbsp;
+  // Admins and faculty bypass approval for non-restricted rooms
+  if (user.role === 'admin' || user.role === 'faculty') {
+    return 'approved';
+  }
+&nbsp;
+  return 'approved';
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = { getAuditLogs, getRecentActivity, getActionTypes };</span>
+/**
+ * Find bookings that can be preempted by a higher priority user
+ * @param {Array} conflicts - Array of conflicting bookings (populated with user)
+ * @param {number} requesterPriority - Priority of the requesting user
+ * @returns {Array} Bookings that can be preempted
+ */
+const findPreemptableBookings = (conflicts, requesterPriority) =&gt; {
+  return conflicts.filter(booking =&gt; {
+    const bookingPriority = calculatePriority(booking.user?.role || <span class="branch-1 cbranch-no" title="branch not covered" >'user')</span>;
+    return requesterPriority &lt; bookingPriority;
+  });
+};
+&nbsp;
+/**
+ * Check if user can override a booking
+ * @param {Object} requester - Requesting user
+ * @param {Object} existingBooking - Existing booking with user populated
+ * @returns {boolean}
+ */
+const canOverride = (requester, existingBooking) =&gt; {
+  const requesterPriority = calculatePriority(requester.role);
+  const existingPriority = calculatePriority(existingBooking.user?.role || <span class="branch-1 cbranch-no" title="branch not covered" >'user')</span>;
+  
+  // Can override if higher priority (lower number)
+  return requesterPriority &lt; existingPriority;
+};
+&nbsp;
+/**
+ * Get priority label for display
+ * @param {number} priority - Priority level
+ * @returns {string}
+ */
+const getPriorityLabel = (priority) =&gt; {
+  const labels = {
+    1: 'Critical',
+    2: 'High',
+    3: 'Medium',
+    4: 'Normal',
+    5: 'Low'
+  };
+  return labels[priority] || 'Normal';
+};
+&nbsp;
+module.exports = {
+  calculatePriority,
+  determineInitialStatus,
+  findPreemptableBookings,
+  canOverride,
+  getPriorityLabel,
+  PRIORITY_LEVELS
+};
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->

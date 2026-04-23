@@ -3,6 +3,7 @@
  * Based on testing.md §4.2 — Tests 15.1, 15.3-15.6
  */
 const request = require('supertest');
+const mongoose = require('mongoose');
 const { connectTestDatabase, disconnectTestDatabase } = require('../helpers/testDb');
 
 let dbContext, app;

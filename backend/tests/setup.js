@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { connectTestDatabase, disconnectTestDatabase } = require('./helpers/testDb');
+const lockManager = require('../utils/lockManager');
 
 let dbContext;
 
@@ -9,6 +10,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await disconnectTestDatabase(dbContext);
+  lockManager.shutdown();
 });
 
 afterEach(async () => {

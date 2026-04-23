@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for controllers/authController.js</title>
+    <title>Code coverage report for utils/lockManager.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">controllers</a> authController.js</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">utils</a> lockManager.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">18.47% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>17/92</span>
+                <span class='fraction'>55/66</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">73.52% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/34</span>
+                <span class='fraction'>25/34</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">84.61% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>11/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">18.68% </span>
+                <span class="strong">86.88% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>17/91</span>
+                <span class='fraction'>53/61</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -259,29 +259,23 @@
 <a name='L194'></a><a href='#L194'>194</a>
 <a name='L195'></a><a href='#L195'>195</a>
 <a name='L196'></a><a href='#L196'>196</a>
-<a name='L197'></a><a href='#L197'>197</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -290,367 +284,394 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">39x</span>
+<span class="cline-any cline-yes">45x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">37x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const { sendEmail } = require('../config/mailer');
-const { welcomeEmail } = require('../utils/emailTemplates');
-const { logAudit } = require('../utils/auditLogger');
-const { isRevoked, revokeTokenString } = require('../utils/tokenRevocation');
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+ * In-Process Lock Manager
+ * 
+ * IMPORTANT: This provides defense-in-depth for single-instance latency reduction ONLY.
+ * It is NOT sufficient for correctness in multi-instance/cluster deployments.
+ * 
+ * For multi-instance safety, the application uses:
+ * - MongoDB transactions (session-based atomicity)
+ * - Partial unique indexes on Booking collection
+ * 
+ * This lock manager reduces contention and improves response time in single-instance
+ * deployments by preventing unnecessary database round-trips, but the database layer
+ * is the source of truth for conflict prevention across all instances.
+ * 
+ * Uses exponential backoff with jitter for retry logic.
+ */
 &nbsp;
-const generateAccessToken = <span class="fstat-no" title="function not covered" >(i</span>d) =&gt; {
-<span class="cstat-no" title="statement not covered" >  return jwt.sign({ id, jti: crypto.randomUUID() }, process.env.JWT_SECRET, {</span>
-    expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '1h'
-  });
-};
-&nbsp;
-const generateRefreshToken = <span class="fstat-no" title="function not covered" >(i</span>d) =&gt; {
-<span class="cstat-no" title="statement not covered" >  return jwt.sign({ id, type: 'refresh', jti: crypto.randomUUID() }, process.env.JWT_SECRET, {</span>
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
-  });
-};
-&nbsp;
-const getRefreshCookieOptions = <span class="fstat-no" title="function not covered" >()</span> =&gt; {
-  const isProduction = <span class="cstat-no" title="statement not covered" >process.env.NODE_ENV === 'production';</span>
-<span class="cstat-no" title="statement not covered" >  return {</span>
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/api/auth'
-  };
-};
-&nbsp;
-const buildUserPayload = <span class="fstat-no" title="function not covered" >(u</span>ser) =&gt; (<span class="cstat-no" title="statement not covered" >{</span>
-  _id: user._id,
-  name: user.name,
-  email: user.email,
-  role: user.role,
-  department: user.department,
-  status: user.status
-});
-&nbsp;
-// @desc    Register a new user
-// @route   POST /api/auth/register
-const register = <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const { name, email, password, department, phone } = <span class="cstat-no" title="statement not covered" >req.body;</span>
-&nbsp;
-    const userExists = <span class="cstat-no" title="statement not covered" >await User.findOne({ email });</span>
-<span class="cstat-no" title="statement not covered" >    if (userExists) {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(400).json({ message: 'User already exists' });</span>
-    }
-&nbsp;
-    const user = <span class="cstat-no" title="statement not covered" >await User.create({ name, email, password, department, phone });</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    await logAudit('USER_REGISTERED', {</span>
-      performedBy: user._id,
-      targetType: 'user',
-      targetId: user._id,
-      details: { name, email, department },
-      ipAddress: req.clientIp
-    });
-&nbsp;
-    // Send welcome email (non-blocking)
-<span class="cstat-no" title="statement not covered" >    sendEmail(email, 'Welcome to CampusBook! 🏫', welcomeEmail(name)).catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; {});</span>
-&nbsp;
-    const token = <span class="cstat-no" title="statement not covered" >generateAccessToken(user._id);</span>
-    const refreshToken = <span class="cstat-no" title="statement not covered" >generateRefreshToken(user._id);</span>
-<span class="cstat-no" title="statement not covered" >    res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());</span>
-<span class="cstat-no" title="statement not covered" >    res.status(201).json({ ...buildUserPayload(user), token });</span>
-  } catch (error) {
-<span class="cstat-no" title="statement not covered" >    res.status(500).json({ message: error.message });</span>
+class LockManager {
+  constructor() {
+    // Map of lockKey -&gt; { value, expiresAt }
+    this.locks = new Map();
+    
+    // Cleanup expired locks every 30 seconds
+    this.cleanupInterval = setInterval(<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >this._cleanup(),</span> 30000);
   }
-};
 &nbsp;
-// @desc    Login user
-// @route   POST /api/auth/login
-const login = <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const { email, password } = <span class="cstat-no" title="statement not covered" >req.body;</span>
+  /**
+   * Try to acquire a lock with exponential backoff
+   * @param {string} key - Lock key (e.g., "lock:room123:2024-12-15")
+   * @param {string} value - Unique value for this lock holder (e.g., requestId)
+   * @param {number} ttlMs - Time to live in milliseconds
+   * @param {number} maxRetries - Maximum retry attempts
+   * @param {number} baseDelayMs - Base delay for exponential backoff
+   * @returns {Promise&lt;Object|null&gt;} Lock object or null if failed
+   */
+  async tryAcquireLock(key, value, ttlMs = <span class="branch-0 cbranch-no" title="branch not covered" >5000,</span> maxRetries = <span class="branch-0 cbranch-no" title="branch not covered" >3,</span> baseDelayMs = 50) {
+    for (let attempt = 0; attempt &lt;= maxRetries; attempt++) {
+      const acquired = this._tryAcquire(key, value, ttlMs);
+      
+      if (acquired) {
+        return { key, value, expiresAt: acquired.expiresAt };
+      }
 &nbsp;
-    const user = <span class="cstat-no" title="statement not covered" >await User.findOne({ email });</span>
-<span class="cstat-no" title="statement not covered" >    if (!user) {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(401).json({ message: 'Invalid email or password' });</span>
-    }
-&nbsp;
-    // Check if user is deactivated
-<span class="cstat-no" title="statement not covered" >    if (user.status === 'deactivated') {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(403).json({ message: 'Account has been deactivated. Contact admin.' });</span>
-    }
-&nbsp;
-    // Check if suspended and if suspension has expired
-<span class="cstat-no" title="statement not covered" >    if (user.status === 'suspended') {</span>
-<span class="cstat-no" title="statement not covered" >      if (user.suspendedUntil &amp;&amp; new Date() &gt; user.suspendedUntil) {</span>
-<span class="cstat-no" title="statement not covered" >        user.status = 'active';</span>
-<span class="cstat-no" title="statement not covered" >        user.suspendReason = '';</span>
-<span class="cstat-no" title="statement not covered" >        user.suspendedUntil = null;</span>
-<span class="cstat-no" title="statement not covered" >        await user.save();</span>
-      } else {
-<span class="cstat-no" title="statement not covered" >        return res.status(403).json({</span>
-          message: 'Account is suspended',
-          suspendedUntil: user.suspendedUntil,
-          reason: user.suspendReason
-        });
+      // If not last attempt, wait with exponential backoff + jitter
+      if (attempt &lt; maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        const jitter = Math.random() * delay * 0.3; // 30% jitter
+        await this._sleep(delay + jitter);
       }
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (await user.matchPassword(password)) {</span>
-<span class="cstat-no" title="statement not covered" >      user.lastLogin = new Date();</span>
-<span class="cstat-no" title="statement not covered" >      await user.save();</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >      await logAudit('USER_LOGIN', {</span>
-        performedBy: user._id,
-        targetType: 'user',
-        targetId: user._id,
-        details: { email },
-        ipAddress: req.clientIp
-      });
-&nbsp;
-      const token = <span class="cstat-no" title="statement not covered" >generateAccessToken(user._id);</span>
-      const refreshToken = <span class="cstat-no" title="statement not covered" >generateRefreshToken(user._id);</span>
-<span class="cstat-no" title="statement not covered" >      res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());</span>
-<span class="cstat-no" title="statement not covered" >      res.json({ ...buildUserPayload(user), token });</span>
-    } else {
-<span class="cstat-no" title="statement not covered" >      res.status(401).json({ message: 'Invalid email or password' });</span>
-    }
-  } catch (error) {
-<span class="cstat-no" title="statement not covered" >    res.status(500).json({ message: error.message });</span>
-  }
-};
-&nbsp;
-// @desc    Refresh access token
-// @route   POST /api/auth/refresh
-const refresh = <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const refreshToken = <span class="cstat-no" title="statement not covered" >req.cookies?.refreshToken;</span>
-<span class="cstat-no" title="statement not covered" >    if (!refreshToken) {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(401).json({ message: 'Not authorized, no refresh token' });</span>
-    }
-&nbsp;
-    let decoded;
-<span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);</span>
-    } catch {
-<span class="cstat-no" title="statement not covered" >      return res.status(401).json({ message: 'Not authorized, refresh token failed' });</span>
-    }
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    if (decoded.type !== 'refresh') {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(401).json({ message: 'Not authorized, invalid token type' });</span>
-    }
-<span class="cstat-no" title="statement not covered" >    if (await isRevoked(decoded.jti)) {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(401).json({ message: 'Not authorized, refresh token revoked' });</span>
-    }
-&nbsp;
-    const user = <span class="cstat-no" title="statement not covered" >await User.findById(decoded.id).select('-password');</span>
-<span class="cstat-no" title="statement not covered" >    if (!user) {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(401).json({ message: 'Not authorized, user not found' });</span>
-    }
-<span class="cstat-no" title="statement not covered" >    if (user.status !== 'active') {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(401).json({ message: 'Not authorized, account is not active' });</span>
-    }
-&nbsp;
-    const token = <span class="cstat-no" title="statement not covered" >generateAccessToken(user._id);</span>
-    const rotatedRefreshToken = <span class="cstat-no" title="statement not covered" >generateRefreshToken(user._id);</span>
-<span class="cstat-no" title="statement not covered" >    await revokeTokenString(refreshToken);</span>
-<span class="cstat-no" title="statement not covered" >    res.cookie('refreshToken', rotatedRefreshToken, getRefreshCookieOptions());</span>
-<span class="cstat-no" title="statement not covered" >    res.json({ ...buildUserPayload(user), token });</span>
-  } catch (error) {
-<span class="cstat-no" title="statement not covered" >    res.status(500).json({ message: error.message });</span>
-  }
-};
-&nbsp;
-// @desc    Logout user
-// @route   POST /api/auth/logout
-const logout = <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
-  const authHeader = <span class="cstat-no" title="statement not covered" >req.headers.authorization;</span>
-<span class="cstat-no" title="statement not covered" >  if (authHeader &amp;&amp; authHeader.startsWith('Bearer ')) {</span>
-    const accessToken = <span class="cstat-no" title="statement not covered" >authHeader.split(' ')[1];</span>
-<span class="cstat-no" title="statement not covered" >    await revokeTokenString(accessToken);</span>
+    return null; // Failed to acquire lock
   }
 &nbsp;
-  const refreshToken = <span class="cstat-no" title="statement not covered" >req.cookies?.refreshToken;</span>
-<span class="cstat-no" title="statement not covered" >  if (refreshToken) {</span>
-<span class="cstat-no" title="statement not covered" >    await revokeTokenString(refreshToken);</span>
+  /**
+   * Attempt to acquire lock (single try)
+   */
+  _tryAcquire(key, value, ttlMs) {
+    const now = Date.now();
+    const existing = this.locks.get(key);
+&nbsp;
+    // Check if lock exists and is not expired
+    if (existing &amp;&amp; existing.expiresAt &gt; now) {
+      return null; // Lock held by someone else
+    }
+&nbsp;
+    // Acquire the lock
+    const expiresAt = now + ttlMs;
+    this.locks.set(key, { value, expiresAt });
+    return { expiresAt };
   }
 &nbsp;
-  const { httpOnly, secure, sameSite, path } = <span class="cstat-no" title="statement not covered" >getRefreshCookieOptions();</span>
-<span class="cstat-no" title="statement not covered" >  res.clearCookie('refreshToken', { httpOnly, secure, sameSite, path });</span>
-<span class="cstat-no" title="statement not covered" >  res.status(200).json({ message: 'Logged out' });</span>
-};
+  /**
+   * Release a lock (only if value matches)
+   * @param {Object} lock - Lock object from tryAcquireLock
+   * @returns {boolean} True if released, false if not held
+   */
+  releaseLock(lock) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!lock || !lock.key) <span class="cstat-no" title="statement not covered" >return false;</span>
 &nbsp;
-// @desc    Get current user
-// @route   GET /api/auth/me
-const getMe = <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
-<span class="cstat-no" title="statement not covered" >  res.json(req.user);</span>
-};
+    const existing = this.locks.get(lock.key);
+    
+    // Only release if value matches (prevents releasing someone else's lock)
+    if (existing &amp;&amp; existing.value === lock.value) {
+      this.locks.delete(lock.key);
+      return true;
+    }
 &nbsp;
-module.exports = { register, login, refresh, logout, getMe };
+    return false;
+  }
+&nbsp;
+  /**
+   * Acquire multiple locks in sorted order (deadlock prevention)
+   * @param {Array&lt;string&gt;} keys - Array of lock keys
+   * @param {string} value - Unique value for this lock holder
+   * @param {number} ttlMs - Time to live in milliseconds
+   * @returns {Promise&lt;Array&lt;Object&gt;|null&gt;} Array of lock objects or null if any failed
+   */
+  async acquireAllLocks(keys, value, ttlMs = <span class="branch-0 cbranch-no" title="branch not covered" >5000)</span> {
+    // Sort keys to prevent deadlock
+    const sortedKeys = [...keys].sort();
+    const acquiredLocks = [];
+&nbsp;
+    try {
+      for (const key of sortedKeys) {
+        const lock = await this.tryAcquireLock(key, value, ttlMs, 3, 50);
+        
+        if (!lock) {
+          // Failed to acquire - release all previously acquired locks
+          for (const acquiredLock of acquiredLocks) {
+            this.releaseLock(acquiredLock);
+          }
+          return null;
+        }
+&nbsp;
+        acquiredLocks.push(lock);
+      }
+&nbsp;
+      return acquiredLocks;
+    } catch (error) {
+      // Release all acquired locks on error
+<span class="cstat-no" title="statement not covered" >      for (const acquiredLock of acquiredLocks) {</span>
+<span class="cstat-no" title="statement not covered" >        this.releaseLock(acquiredLock);</span>
+      }
+<span class="cstat-no" title="statement not covered" >      throw error;</span>
+    }
+  }
+&nbsp;
+  /**
+   * Release multiple locks
+   * @param {Array&lt;Object&gt;} locks - Array of lock objects
+   */
+  releaseAllLocks(locks) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!locks || !Array.isArray(locks)) <span class="cstat-no" title="statement not covered" >return;</span>
+    
+    for (const lock of locks) {
+      this.releaseLock(lock);
+    }
+  }
+&nbsp;
+  /**
+   * Check if a lock is currently held
+   * @param {string} key - Lock key
+   * @returns {boolean}
+   */
+  isLocked(key) {
+    const existing = this.locks.get(key);
+    return !!(existing &amp;&amp; existing.expiresAt &gt; Date.now());
+  }
+&nbsp;
+  /**
+   * Cleanup expired locks
+   */
+<span class="fstat-no" title="function not covered" >  _c</span>leanup() {
+    const now = <span class="cstat-no" title="statement not covered" >Date.now();</span>
+<span class="cstat-no" title="statement not covered" >    for (const [key, lock] of this.locks.entries()) {</span>
+<span class="cstat-no" title="statement not covered" >      if (lock.expiresAt &lt;= now) {</span>
+<span class="cstat-no" title="statement not covered" >        this.locks.delete(key);</span>
+      }
+    }
+  }
+&nbsp;
+  /**
+   * Sleep helper
+   */
+  _sleep(ms) {
+    return new Promise(resolve =&gt; setTimeout(resolve, ms));
+  }
+&nbsp;
+  /**
+   * Get lock statistics (for monitoring)
+   */
+  getStats() {
+    const now = Date.now();
+    let active = 0;
+    let expired = 0;
+&nbsp;
+    for (const lock of this.locks.values()) {
+      if (lock.expiresAt &gt; now) {
+        active++;
+      } else <span class="missing-if-branch" title="else path not taken" >E</span>{
+<span class="cstat-no" title="statement not covered" >        expired++;</span>
+      }
+    }
+&nbsp;
+    return { active, expired, total: this.locks.size };
+  }
+&nbsp;
+  /**
+   * Shutdown the lock manager
+   */
+  shutdown() {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    this.locks.clear();
+  }
+}
+&nbsp;
+// Singleton instance
+const lockManager = new LockManager();
+&nbsp;
+module.exports = lockManager;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->

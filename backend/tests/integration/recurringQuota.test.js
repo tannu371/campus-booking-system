@@ -6,7 +6,7 @@
 
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { connectTestDatabase, closeTestDatabase } = require('../helpers/testDb');
+const { connectTestDatabase, disconnectTestDatabase } = require('../helpers/testDb');
 const User = require('../../models/User');
 const Room = require('../../models/Room');
 const Booking = require('../../models/Booking');
@@ -71,7 +71,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await closeTestDatabase(dbContext);
+  await disconnectTestDatabase(dbContext);
 });
 
 beforeEach(async () => {
